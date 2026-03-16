@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MUN — Security Council</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#C9A84C;--gold-light:#E8C97A;--gold-dark:#8B6914;
+  --navy:#0A1628;--navy-mid:#122040;--navy-light:#1E3358;
+  --cream:#F8F4E8;--cream-dark:#EDE8D6;
+  --red:#C0392B;--green:#1A7A4A;
+  --glass:rgba(255,255,255,0.07);--glass-border:rgba(201,168,76,0.25);
+  --sidebar-w:220px;--chat-w:258px;
+  --radius:10px;
+}
+html{height:100%;-webkit-text-size-adjust:100%}
+body{font-family:'Source Sans 3',sans-serif;background:var(--navy);color:var(--cream);height:100%;overflow:hidden}
+#app{height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.screen{display:none;flex:1;overflow:hidden}
+.screen.active{display:flex;flex-direction:column}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,.28);border-radius:2px}
+
+/* ── BUTTONS ── */
+.btn-primary{background:linear-gradient(135deg,var(--gold-dark),var(--gold));color:var(--navy);font-family:'Source Sans 3',sans-serif;font-weight:700;font-size:.9rem;padding:11px 32px;border:none;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;touch-action:manipulation}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,.3)}
+.btn-primary:disabled{opacity:.32;cursor:not-allowed;transform:none;box-shadow:none}
+.sc-btn{padding:6px 13px;border-radius:6px;border:1px solid var(--glass-border);background:var(--glass);color:var(--cream-dark);font-size:.74rem;cursor:pointer;transition:all .15s;font-family:'Source Sans 3',sans-serif;touch-action:manipulation;white-space:nowrap}
+.sc-btn:hover,.sc-btn:active{background:rgba(255,255,255,.12)}
+.sc-btn.gold{border-color:rgba(201,168,76,.42);color:var(--gold-light)}
+.sc-btn.gold:hover,.sc-btn.gold:active{background:rgba(201,168,76,.14)}
+.sc-btn.danger{border-color:rgba(192,57,43,.42);color:#e08070}
+.sc-btn.danger:hover{background:rgba(192,57,43,.1)}
+.sc-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── API KEY SCREEN ── */
+#apiScreen{background:linear-gradient(135deg,#0A1628,#122040);align-items:center;justify-content:center;padding:2rem 1rem}
+.api-box{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:2rem 2rem;max-width:480px;width:100%;text-align:center}
+.api-box h2{font-family:'Playfair Display',serif;color:var(--gold-light);font-size:1.4rem;margin-bottom:.5rem}
+.api-box p{font-size:.82rem;color:rgba(232,201,122,.55);margin-bottom:1.5rem;line-height:1.6}
+.api-input{width:100%;padding:10px 14px;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);border-radius:8px;color:var(--cream);font-size:.88rem;font-family:inherit;margin-bottom:.75rem;transition:border-color .2s}
+.api-input:focus{outline:none;border-color:var(--gold)}
+.api-model{width:100%;padding:8px 12px;background:rgba(255,255,255,.05);border:1px solid var(--glass-border);border-radius:8px;color:var(--cream);font-size:.82rem;font-family:inherit;margin-bottom:1.2rem}
+.api-model option{background:var(--navy-mid)}
+.api-note{font-size:.72rem;color:rgba(255,255,255,.3);margin-top:.75rem;line-height:1.55}
+.api-note a{color:var(--gold);text-decoration:none}
+
+/* ── LOBBY ── */
+#lobby{background:linear-gradient(135deg,#0A1628 0%,#122040 50%,#0A1628 100%);align-items:center;justify-content:center;position:relative;overflow:hidden auto}
+#lobby::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 60px,rgba(201,168,76,.03) 60px,rgba(201,168,76,.03) 61px),repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(201,168,76,.03) 60px,rgba(201,168,76,.03) 61px);pointer-events:none}
+.lobby-inner{text-align:center;z-index:1;padding:2rem 1rem;width:100%;max-width:920px}
+.un-emblem{width:80px;height:80px;margin:0 auto 1.2rem}
+.lobby-title{font-family:'Playfair Display',serif;font-size:clamp(1.5rem,4vw,2.8rem);color:var(--gold-light);letter-spacing:.05em;line-height:1.2;margin-bottom:.3rem}
+.lobby-sub{font-size:.78rem;color:rgba(232,201,122,.5);letter-spacing:.22em;text-transform:uppercase;margin-bottom:1.8rem;font-weight:300}
+.agenda-badge{display:inline-block;background:rgba(201,168,76,.1);border:1px solid var(--glass-border);border-radius:6px;padding:5px 16px;font-size:.76rem;color:var(--gold-light);margin-bottom:1.5rem}
+.country-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;max-width:860px;margin:0 auto 1.5rem}
+.country-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .2s;text-align:left;touch-action:manipulation}
+.country-card:hover,.country-card:active{background:rgba(201,168,76,.1);border-color:var(--gold);transform:translateY(-1px)}
+.country-card.selected{background:rgba(201,168,76,.18);border-color:var(--gold-light);box-shadow:0 0 0 2px rgba(201,168,76,.22)}
+.cc-flag{font-size:1.7rem;margin-bottom:4px}
+.cc-name{font-size:.76rem;font-weight:600;color:var(--cream)}
+.cc-bloc{font-size:.65rem;color:var(--gold);opacity:.7;margin-top:1px}
+
+/* ── BRIEFING ── */
+#briefing{background:var(--navy);overflow:hidden auto;align-items:center}
+.briefing-inner{max-width:780px;margin:0 auto;padding:2rem 1rem;width:100%}
+.briefing-header{display:flex;align-items:center;gap:1.2rem;margin-bottom:1.5rem;padding-bottom:1.2rem;border-bottom:1px solid var(--glass-border)}
+.big-flag{font-size:3rem;flex-shrink:0}
+.bh-text h1{font-family:'Playfair Display',serif;color:var(--gold-light);font-size:clamp(1.2rem,3vw,1.6rem)}
+.bh-text p{color:rgba(232,201,122,.5);font-size:.78rem;margin-top:3px}
+.brief-section{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);padding:.9rem 1.2rem;margin-bottom:.7rem}
+.brief-section h3{color:var(--gold);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.55rem;font-weight:600}
+.brief-section p{color:var(--cream-dark);font-size:.83rem;line-height:1.65}
+.priority-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tag{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.24);border-radius:4px;padding:2px 8px;font-size:.7rem;color:var(--gold-light)}
+.tag.red{background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.24);color:#e08070}
+.tag.green{background:rgba(26,122,74,.1);border-color:rgba(26,122,74,.24);color:#70d4a0}
+.tag.blue{background:rgba(21,101,192,.1);border-color:rgba(21,101,192,.24);color:#90b8f0}
+.brief-actions{display:flex;gap:8px;margin-top:1.5rem;flex-wrap:wrap}
+
+/* ── COMMITTEE LAYOUT ── */
+#committee{flex-direction:row;overflow:hidden}
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--navy-mid);border-right:1px solid var(--glass-border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;transition:transform .3s;z-index:10}
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.chat-area{width:var(--chat-w);min-width:var(--chat-w);background:var(--navy-mid);border-left:1px solid var(--glass-border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;transition:transform .3s}
+
+/* SIDEBAR CONTENT */
+.sidebar-header{padding:.8rem .9rem;border-bottom:1px solid var(--glass-border);flex-shrink:0}
+.sidebar-header h2{font-family:'Playfair Display',serif;font-size:.88rem;color:var(--gold-light);line-height:1.3}
+.sidebar-header p{font-size:.65rem;color:rgba(232,201,122,.4);margin-top:2px}
+.sb-section{padding:.55rem .8rem}
+.sb-section h4{font-size:.6rem;text-transform:uppercase;letter-spacing:.16em;color:rgba(201,168,76,.55);margin-bottom:.38rem;font-weight:600}
+.delegate-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;margin-bottom:2px;cursor:pointer;transition:background .15s;border:1px solid transparent}
+.delegate-row:hover{background:var(--glass)}
+.delegate-row.speaking{background:rgba(201,168,76,.14);border-color:rgba(201,168,76,.3)}
+.delegate-row.me{border-color:rgba(26,122,74,.4)}
+.d-flag{font-size:.9rem;flex-shrink:0}
+.d-name{flex:1;color:var(--cream-dark);font-size:.71rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.d-dot{width:6px;height:6px;border-radius:50%;background:#3a3a4a;flex-shrink:0}
+.d-dot.active{background:var(--green)}
+.d-dot.speaking{background:var(--gold);animation:dpulse 1s infinite}
+@keyframes dpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.6)}}
+.phase-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.63rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.phase-badge.gsl{background:rgba(21,101,192,.2);color:#8ab4f0;border:1px solid rgba(21,101,192,.25)}
+.phase-badge.mod{background:rgba(201,168,76,.16);color:var(--gold-light);border:1px solid rgba(201,168,76,.25)}
+.phase-badge.unmod{background:rgba(26,122,74,.16);color:#70d4a0;border:1px solid rgba(26,122,74,.25)}
+.phase-badge.vote{background:rgba(192,57,43,.16);color:#e08070;border:1px solid rgba(192,57,43,.25)}
+.phase-badge.crisis{background:rgba(192,57,43,.24);color:#ff9090;border:1px solid rgba(192,57,43,.4);animation:dpulse 1.5s infinite}
+.score-section{padding:.55rem .8rem;border-top:1px solid var(--glass-border)}
+.score-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.score-label{font-size:.65rem;color:rgba(255,255,255,.34);width:72px;flex-shrink:0}
+.score-bar-bg{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:2px;background:var(--gold);transition:width .5s ease}
+.score-num{font-size:.65rem;color:var(--gold-light);width:22px;text-align:right}
+.advisor-meter{padding:.55rem .8rem;border-top:1px solid var(--glass-border);flex-shrink:0}
+.advisor-label{font-size:.6rem;text-transform:uppercase;letter-spacing:.14em;color:rgba(201,168,76,.46)}
+.advisor-dots-row{display:flex;gap:5px;margin-top:4px}
+.adot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--gold);transition:background .3s}
+.adot.avail{background:var(--gold)}
+.advisor-left{font-size:.63rem;color:rgba(255,255,255,.3);margin-top:2px}
+
+/* MAIN TOP BAR */
+.committee-header{background:var(--navy-mid);border-bottom:1px solid var(--glass-border);padding:.55rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:.5rem;flex-wrap:wrap}
+.ch-left{display:flex;align-items:center;gap:.6rem}
+.hamburger{display:none;background:none;border:none;color:var(--gold-light);font-size:1.2rem;cursor:pointer;padding:4px;touch-action:manipulation}
+.committee-name{font-family:'Playfair Display',serif;font-size:.92rem;color:var(--gold-light)}
+.agenda-text{font-size:.65rem;color:rgba(232,201,122,.45);margin-top:1px}
+.global-stats{display:flex;gap:10px;flex-shrink:0}
+.gstat{text-align:center;min-width:36px}
+.gstat-label{font-size:.52rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.3)}
+.gstat-val{font-size:.76rem;font-weight:600;color:var(--cream)}
+.gstat-val.danger{color:#e08070}
+.gstat-val.good{color:#70d4a0}
+
+/* TABS */
+.main-tabs{display:flex;border-bottom:1px solid var(--glass-border);padding:0 1rem;flex-shrink:0;background:var(--navy-mid);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.main-tabs::-webkit-scrollbar{height:0}
+.mtab{padding:7px 11px;font-size:.73rem;cursor:pointer;color:rgba(232,201,122,.34);border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;flex-shrink:0;touch-action:manipulation}
+.mtab.active{color:var(--gold-light);border-bottom-color:var(--gold)}
+.content-wrapper{display:flex;flex:1;overflow:hidden;min-height:0}
+.tab-container{flex:1;overflow-y:auto;min-width:0;-webkit-overflow-scrolling:touch}
+.tab-panel{display:none;padding:.9rem 1rem;flex-direction:column;gap:.8rem}
+.tab-panel.active{display:flex}
+
+/* PODIUM */
+.podium-card{background:var(--navy-mid);border:1px solid var(--glass-border);border-radius:12px;padding:1rem 1.2rem;position:relative;overflow:hidden;transition:border-color .3s,box-shadow .3s}
+.podium-card.live{border-color:var(--gold);box-shadow:0 0 24px rgba(201,168,76,.1)}
+.podium-card.live::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:shimmer 2.2s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.podium-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem;gap:.5rem}
+.speaker-info{display:flex;align-items:center;gap:9px;min-width:0}
+.speaker-flag{font-size:2rem;flex-shrink:0}
+.speaker-name{font-family:'Playfair Display',serif;font-size:1rem;color:var(--cream);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.speaker-country{font-size:.66rem;color:var(--gold);opacity:.7;margin-top:1px}
+.timer-ring{position:relative;width:54px;height:54px;flex-shrink:0}
+.timer-svg{transform:rotate(-90deg)}
+.timer-bg{fill:none;stroke:rgba(255,255,255,.07);stroke-width:4}
+.timer-fg{fill:none;stroke:var(--gold);stroke-width:4;stroke-dasharray:151;stroke-dashoffset:151;stroke-linecap:round;transition:stroke-dashoffset .5s linear,stroke .3s}
+.timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.86rem;font-weight:600;color:var(--cream)}
+.speech-text{font-size:.82rem;line-height:1.7;color:var(--cream-dark);font-style:italic;border-left:3px solid rgba(201,168,76,.3);padding-left:.8rem;min-height:48px;word-break:break-word}
+.speech-controls{display:flex;gap:6px;margin-top:.8rem;flex-wrap:wrap;align-items:center}
+.live-badge{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;color:var(--gold)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#e05050;animation:dpulse 1s infinite}
+
+/* MIC WAVEFORM */
+.mic-wave{display:flex;align-items:center;gap:3px;height:24px;margin-left:8px}
+.mic-wave span{width:3px;background:var(--gold);border-radius:2px;animation:wave 1s ease-in-out infinite}
+.mic-wave span:nth-child(1){animation-delay:0s}
+.mic-wave span:nth-child(2){animation-delay:.1s}
+.mic-wave span:nth-child(3){animation-delay:.2s}
+.mic-wave span:nth-child(4){animation-delay:.3s}
+.mic-wave span:nth-child(5){animation-delay:.4s}
+@keyframes wave{0%,100%{height:4px}50%{height:20px}}
+
+/* SPEAK BTN */
+.mic-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1.5px solid rgba(201,168,76,.45);background:rgba(201,168,76,.1);color:var(--gold-light);font-size:.8rem;cursor:pointer;font-family:inherit;transition:all .2s;touch-action:manipulation}
+.mic-btn:hover{background:rgba(201,168,76,.2)}
+.mic-btn.recording{border-color:#e05050;background:rgba(224,80,80,.15);color:#ff9090;animation:micpulse 1.2s infinite}
+@keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(224,80,80,.3)}50%{box-shadow:0 0 0 8px rgba(224,80,80,0)}}
+
+/* TTS BUTTON */
+.tts-btn{background:none;border:none;color:rgba(255,255,255,.38);cursor:pointer;font-size:.82rem;padding:2px 5px;border-radius:4px;transition:color .15s;touch-action:manipulation;flex-shrink:0}
+.tts-btn:hover{color:var(--gold-light)}
+.tts-btn.playing{color:var(--gold);animation:dpulse 1.2s infinite}
+
+/* GROQ STATUS */
+.groq-status{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;padding:3px 9px;border-radius:12px;border:1px solid}
+.groq-status.ok{color:#70d4a0;border-color:rgba(26,122,74,.3);background:rgba(26,122,74,.1)}
+.groq-status.err{color:#e08070;border-color:rgba(192,57,43,.3);background:rgba(192,57,43,.1)}
+.groq-status.thinking{color:var(--gold-light);border-color:rgba(201,168,76,.3);background:rgba(201,168,76,.1)}
+.groq-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.groq-dot.thinking{animation:dpulse .8s infinite}
+
+/* CARDS */
+.card{background:var(--navy-mid);border:1px solid var(--glass-border);border-radius:var(--radius);padding:.9rem 1.1rem}
+.card h3{font-family:'Playfair Display',serif;color:var(--gold-light);font-size:.88rem;margin-bottom:.6rem}
+.card-sub{font-size:.73rem;color:rgba(255,255,255,.34);margin-bottom:.7rem}
+
+/* CRISIS */
+.crisis-alert{background:linear-gradient(135deg,rgba(192,57,43,.16),rgba(192,57,43,.06));border:1px solid rgba(192,57,43,.4);border-radius:var(--radius);padding:1rem 1.2rem;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.crisis-hd{color:#ff8888;font-family:'Playfair Display',serif;font-size:.94rem;margin-bottom:.38rem;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.crisis-sev{font-size:.6rem;background:rgba(192,57,43,.24);border:1px solid rgba(192,57,43,.4);border-radius:4px;padding:2px 6px;color:#ff8888;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.crisis-body{color:rgba(255,200,200,.78);font-size:.8rem;line-height:1.6}
+.crisis-btns{display:flex;gap:6px;margin-top:.8rem;flex-wrap:wrap}
+
+/* FOLLOWUP */
+.followup-card{background:var(--navy-mid);border:1px solid rgba(201,168,76,.34);border-radius:var(--radius);padding:.9rem 1.1rem;animation:fadeUp .35s ease}
+.followup-card h3{color:var(--gold-light);font-family:'Playfair Display',serif;font-size:.84rem;margin-bottom:.4rem}
+.followup-card p{font-size:.8rem;color:var(--cream-dark);line-height:1.62}
+
+/* GSL */
+.gsl-list{display:flex;flex-direction:column;gap:3px}
+.gsl-item{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:7px;background:var(--glass);border:1px solid var(--glass-border)}
+.gsl-num{font-size:.65rem;color:var(--gold);width:14px;font-weight:600;flex-shrink:0}
+.gsl-flag{font-size:.9rem;flex-shrink:0}
+.gsl-name{flex:1;font-size:.74rem;color:var(--cream-dark)}
+.gsl-badge{font-size:.62rem;padding:2px 5px;border-radius:4px;font-weight:500;flex-shrink:0}
+.gsl-badge.waiting{background:rgba(100,100,120,.14);color:rgba(255,255,255,.34)}
+.gsl-badge.next{background:rgba(201,168,76,.14);color:var(--gold-light)}
+.gsl-badge.speaking{background:rgba(192,57,43,.14);color:#ff9090}
+.gsl-badge.done{background:rgba(26,122,74,.14);color:#70d4a0}
+
+/* MOTIONS */
+.motion-item{background:var(--glass);border:1px solid var(--glass-border);border-radius:7px;padding:6px 9px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:7px}
+.motion-text{font-size:.74rem;color:var(--cream-dark);flex:1}
+.motion-btns{display:flex;gap:4px;flex-shrink:0}
+.m-yes{padding:2px 7px;border-radius:4px;border:1px solid rgba(26,122,74,.4);background:rgba(26,122,74,.1);color:#70d4a0;font-size:.68rem;cursor:pointer;font-family:inherit}
+.m-no{padding:2px 7px;border-radius:4px;border:1px solid rgba(192,57,43,.35);background:rgba(192,57,43,.08);color:#e08070;font-size:.68rem;cursor:pointer;font-family:inherit}
+
+/* RESOLUTION */
+.resolution-panel{background:var(--navy-mid);border:1px solid var(--glass-border);border-radius:var(--radius);padding:1rem 1.2rem}
+.res-title{font-family:'Playfair Display',serif;color:var(--gold-light);font-size:.88rem;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:7px;flex-wrap:wrap}
+.res-meta{font-size:.7rem;color:rgba(255,255,255,.34);margin-bottom:.75rem;line-height:1.7}
+.res-meta span{color:var(--gold-light)}
+.clause-hd{font-size:.64rem;text-transform:uppercase;letter-spacing:.14em;color:rgba(201,168,76,.44);margin-bottom:.38rem;margin-top:.35rem}
+.res-clause{display:flex;gap:6px;margin-bottom:5px;align-items:flex-start}
+.clause-type{font-size:.65rem;padding:2px 5px;border-radius:4px;flex-shrink:0;margin-top:3px;font-weight:600}
+.clause-type.pre{background:rgba(21,101,192,.15);color:#8ab4f0;border:1px solid rgba(21,101,192,.24)}
+.clause-type.op{background:rgba(26,122,74,.15);color:#80d0a0;border:1px solid rgba(26,122,74,.24)}
+.clause-text{font-size:.78rem;color:var(--cream-dark);line-height:1.58;flex:1;word-break:break-word}
+.clause-input{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:6px;padding:5px 8px;color:var(--cream);font-size:.76rem;font-family:inherit}
+.clause-input:focus{outline:none;border-color:rgba(201,168,76,.4)}
+.clause-del{background:none;border:none;color:rgba(255,80,80,.45);cursor:pointer;font-size:.78rem;flex-shrink:0;margin-top:3px}
+.clause-del:hover{color:rgba(255,80,80,.8)}
+.res-actions{display:flex;gap:6px;margin-top:.85rem;flex-wrap:wrap}
+
+/* VOTING */
+.vote-panel{background:var(--navy-mid);border:1px solid var(--glass-border);border-radius:var(--radius);padding:1rem 1.2rem}
+.vote-panel h3{font-family:'Playfair Display',serif;color:var(--gold-light);font-size:.88rem;margin-bottom:.28rem}
+.vote-subtitle{font-size:.72rem;color:rgba(255,255,255,.34);margin-bottom:.75rem}
+.vote-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:5px;margin-bottom:.85rem}
+.vote-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;padding:6px 7px;text-align:center;transition:all .35s}
+.vote-card.yes{background:rgba(26,122,74,.18);border-color:rgba(26,122,74,.4)}
+.vote-card.no{background:rgba(192,57,43,.15);border-color:rgba(192,57,43,.34)}
+.vote-card.abstain{background:rgba(100,100,120,.15);border-color:rgba(100,100,120,.25)}
+.vote-flag{font-size:1.1rem}
+.vote-country{font-size:.6rem;color:rgba(255,255,255,.48);margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.vote-choice{font-size:.6rem;font-weight:700;margin-top:2px}
+.vote-choice.yes{color:#70d4a0}
+.vote-choice.no{color:#e08070}
+.vote-choice.abstain{color:rgba(255,255,255,.32)}
+.vote-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.vote-result{font-size:.8rem;color:var(--cream-dark);font-weight:500}
+
+/* BLOCS */
+.bloc-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;padding:.75rem .9rem;margin-bottom:6px}
+.bloc-card h4{font-size:.76rem;color:var(--gold-light);margin-bottom:.35rem;font-weight:500}
+.bloc-members{display:flex;gap:5px;flex-wrap:wrap}
+.bloc-member{font-size:.68rem;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.18);border-radius:4px;padding:2px 7px;color:var(--gold-light)}
+
+/* TSS */
+.tss-action{background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;gap:9px;align-items:flex-start}
+.tss-icon{font-size:1.2rem;flex-shrink:0;margin-top:1px}
+.tss-body{flex:1;min-width:0}
+.tss-label{font-size:.8rem;font-weight:500;color:var(--cream);margin-bottom:1px}
+.tss-desc{font-size:.7rem;color:rgba(255,255,255,.38);margin-bottom:4px;line-height:1.45}
+.tss-meta{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.tss-cost{font-size:.65rem;color:var(--gold);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.17);border-radius:4px;padding:1px 5px}
+.tss-eff{font-size:.65rem}
+.tss-eff.good{color:#70d4a0}
+.tss-eff.bad{color:#e08070}
+.tss-deploy{margin-left:auto;padding:2px 8px;border-radius:5px;border:1px solid rgba(201,168,76,.38);background:rgba(201,168,76,.08);color:var(--gold-light);font-size:.68rem;cursor:pointer;font-family:inherit;flex-shrink:0}
+.tss-deploy:hover:not(:disabled){background:rgba(201,168,76,.16)}
+.tss-deploy:disabled{opacity:.32;cursor:not-allowed}
+.tss-log-item{border-left:2px solid var(--gold);padding:4px 8px;margin-bottom:5px;background:rgba(201,168,76,.04);border-radius:0 5px 5px 0}
+
+/* CHAT */
+.chat-tabs{display:flex;border-bottom:1px solid var(--glass-border);flex-shrink:0}
+.ctab{flex:1;padding:7px 3px;font-size:.68rem;text-align:center;cursor:pointer;color:rgba(232,201,122,.35);transition:all .15s;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;touch-action:manipulation}
+.ctab.active{color:var(--gold-light);border-bottom-color:var(--gold)}
+.chat-msgs{flex:1;overflow-y:auto;padding:7px 9px;display:flex;flex-direction:column;gap:4px;-webkit-overflow-scrolling:touch}
+.msg{padding:5px 7px;border-radius:8px;font-size:.73rem;line-height:1.5}
+.msg.chair{background:rgba(201,168,76,.09);border:1px solid rgba(201,168,76,.15);color:var(--cream)}
+.msg.crisis{background:rgba(192,57,43,.11);border:1px solid rgba(192,57,43,.24);color:#ffaaaa;font-weight:500}
+.msg.delegate{background:var(--glass);border:1px solid var(--glass-border);color:var(--cream-dark)}
+.msg.me{background:rgba(26,122,74,.11);border:1px solid rgba(26,122,74,.24);color:#90e0b8;align-self:flex-end;max-width:95%}
+.msg.system{color:rgba(255,255,255,.27);font-size:.64rem;text-align:center;padding:2px 0}
+.msg.private{background:rgba(21,101,192,.11);border:1px solid rgba(21,101,192,.24);color:#90b8f0}
+.msg.groq{background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.18);color:var(--cream)}
+.msg-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.msg-author{font-weight:600;font-size:.63rem;opacity:.6}
+.chat-input-area{padding:7px 8px;border-top:1px solid var(--glass-border);flex-shrink:0}
+.chat-target{width:100%;margin-bottom:4px;padding:4px 7px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:5px;color:var(--cream);font-size:.7rem;font-family:inherit}
+.chat-target option{background:var(--navy-mid)}
+.chat-input{width:100%;padding:6px 8px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:6px;color:var(--cream);font-size:.74rem;font-family:inherit;resize:none}
+.chat-input:focus{outline:none;border-color:rgba(201,168,76,.38)}
+.chat-input::placeholder{color:rgba(255,255,255,.22)}
+.chat-row{display:flex;gap:5px;margin-top:4px}
+.chat-send{flex:1;padding:6px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.24);border-radius:6px;color:var(--gold-light);font-size:.72rem;cursor:pointer;font-family:inherit}
+.chat-send:hover{background:rgba(201,168,76,.18)}
+.chat-mic-btn{padding:6px 9px;background:rgba(255,255,255,.06);border:1px solid var(--glass-border);border-radius:6px;color:var(--cream-dark);font-size:.8rem;cursor:pointer}
+.chat-mic-btn.recording{border-color:#e05050;color:#ff9090;background:rgba(224,80,80,.12);animation:micpulse 1.2s infinite}
+
+/* BOTTOM BAR */
+.bottom-bar{background:var(--navy-mid);border-top:1px solid var(--glass-border);padding:.55rem .9rem;display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.bb-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.24);flex-shrink:0}
+.bb-btn{padding:5px 11px;border-radius:6px;border:1px solid var(--glass-border);background:var(--glass);color:var(--cream-dark);font-size:.72rem;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;touch-action:manipulation}
+.bb-btn:hover,.bb-btn:active{background:rgba(255,255,255,.1)}
+.bb-btn.gold{border-color:rgba(201,168,76,.34);color:var(--gold-light)}
+.bb-btn.gold:hover{background:rgba(201,168,76,.1)}
+
+/* AWARDS */
+#awards{background:linear-gradient(135deg,#0A1628,#122040);align-items:center;justify-content:center;overflow:auto}
+.awards-inner{max-width:640px;width:100%;text-align:center;padding:2rem 1rem}
+.awards-title{font-family:'Playfair Display',serif;font-size:clamp(1.5rem,4vw,2rem);color:var(--gold-light);margin-bottom:.3rem}
+.awards-sub{color:rgba(232,201,122,.4);margin-bottom:2rem;letter-spacing:.12em;font-size:.74rem;text-transform:uppercase}
+.award-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:.8rem;display:flex;align-items:center;gap:1.1rem;text-align:left}
+.award-medal{font-size:2.4rem;flex-shrink:0}
+.award-name{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--cream)}
+.award-country{font-size:.78rem;color:var(--gold);margin-top:2px}
+.award-reason{font-size:.74rem;color:rgba(232,201,122,.5);margin-top:4px;line-height:1.5}
+.award-scores{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:1.2rem}
+.ascore{background:var(--glass);border:1px solid var(--glass-border);border-radius:9px;padding:.8rem .9rem}
+.ascore-label{font-size:.63rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(201,168,76,.44);margin-bottom:.38rem}
+.ascore-val{font-size:1.25rem;font-weight:600;color:var(--cream)}
+.ascore-bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;margin-top:4px}
+.ascore-fill{height:100%;border-radius:2px;background:var(--gold)}
+.final-state{margin-top:1.2rem;padding:.8rem 1.1rem;background:var(--glass);border:1px solid var(--glass-border);border-radius:9px;display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center}
+.fs-item{font-size:.78rem}
+.fs-label{color:rgba(255,255,255,.34)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal{background:var(--navy-mid);border:1px solid var(--gold);border-radius:14px;padding:1.5rem;max-width:500px;width:100%;position:relative;max-height:88vh;overflow-y:auto}
+.modal h2{font-family:'Playfair Display',serif;color:var(--gold-light);margin-bottom:.25rem;font-size:1.15rem}
+.modal-sub{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(201,168,76,.4);margin-bottom:.9rem}
+.modal-close{position:absolute;top:.85rem;right:.85rem;background:none;border:none;color:rgba(255,255,255,.38);font-size:1rem;cursor:pointer}
+.advisor-brief{background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:8px;padding:.8rem .95rem;margin-bottom:.65rem}
+.advisor-brief h4{font-size:.63rem;text-transform:uppercase;letter-spacing:.15em;color:rgba(201,168,76,.55);margin-bottom:.42rem;font-weight:600}
+.advisor-brief p{font-size:.8rem;color:var(--cream-dark);line-height:1.62}
+.advisor-loading{text-align:center;padding:2rem;color:var(--gold);font-family:'Playfair Display',serif;font-style:italic}
+.loading-dots::after{content:'';animation:ldots 1.3s steps(4,end) infinite}
+@keyframes ldots{0%,100%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+
+/* TOAST */
+.toast{position:fixed;top:1rem;right:1rem;z-index:400;background:var(--navy-mid);border:1px solid var(--gold);border-radius:10px;padding:8px 13px;font-size:.78rem;color:var(--cream);max-width:260px;animation:fadeUp .3s ease;pointer-events:none;line-height:1.45;word-break:break-word}
+.toast.error{border-color:#e08070;color:#ffbbaa}
+.toast.success{border-color:#70d4a0;color:#90e0b8}
+
+/* MOBILE OVERLAY SIDEBAR */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9}
+
+/* ══ RESPONSIVE BREAKPOINTS ══ */
+
+/* Tablet (≤900px): hide chat panel, show toggle */
+@media(max-width:900px){
+  :root{--sidebar-w:200px;--chat-w:0px}
+  .chat-area{display:none}
+  .chat-toggle-btn{display:flex!important}
+}
+
+/* Mobile (≤640px): sidebar becomes overlay drawer */
+@media(max-width:640px){
+  :root{--sidebar-w:240px}
+  #committee{position:relative}
+  .sidebar{position:fixed;left:0;top:0;height:100%;transform:translateX(-100%);z-index:20;box-shadow:4px 0 24px rgba(0,0,0,.5)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay{display:block}
+  .hamburger{display:block!important}
+  .main-area{width:100%}
+  .global-stats{display:none}
+  .main-tabs{padding:0 .5rem}
+  .mtab{padding:7px 9px;font-size:.68rem}
+  .tab-panel{padding:.7rem .75rem}
+  .bottom-bar{padding:.45rem .7rem;gap:4px}
+  .bb-btn{padding:4px 9px;font-size:.68rem}
+  .bb-label{display:none}
+  .committee-header{padding:.45rem .7rem}
+  .podium-card{padding:.8rem .9rem}
+  .speaker-flag{font-size:1.7rem}
+  .speaker-name{font-size:.9rem}
+  .country-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+}
+
+/* Very small (≤400px) */
+@media(max-width:400px){
+  .country-grid{grid-template-columns:repeat(2,1fr)}
+  .award-scores{grid-template-columns:1fr}
+}
+
+/* Landscape mobile */
+@media(max-height:500px) and (orientation:landscape){
+  .lobby-inner{padding:1rem}
+  .un-emblem{width:50px;height:50px;margin-bottom:.6rem}
+  .lobby-title{font-size:1.4rem}
+  .lobby-sub{margin-bottom:.8rem}
+}
+
+/* Chat floating button (tablet) */
+.chat-toggle-btn{display:none;position:fixed;bottom:80px;right:1rem;z-index:50;width:44px;height:44px;border-radius:50%;background:var(--gold-dark);border:none;color:var(--navy);font-size:1.1rem;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4);touch-action:manipulation}
+.chat-panel-float{display:none;position:fixed;bottom:130px;right:1rem;z-index:50;width:min(300px,calc(100vw - 2rem));background:var(--navy-mid);border:1px solid var(--glass-border);border-radius:14px;overflow:hidden;flex-direction:column;height:400px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.chat-panel-float.open{display:flex}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══ API KEY SCREEN ══ -->
+<div id="apiScreen" class="screen active">
+  <div class="api-box">
+    <svg style="width:60px;height:60px;margin:0 auto .9rem;display:block" viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="46" stroke="#C9A84C" stroke-width="1.5" fill="rgba(201,168,76,0.04)"/>
+      <circle cx="50" cy="50" r="35" stroke="#C9A84C" stroke-width="1" fill="none" stroke-opacity=".5"/>
+      <ellipse cx="50" cy="50" rx="13" ry="35" stroke="#C9A84C" stroke-width="1" fill="none" stroke-opacity=".4"/>
+      <ellipse cx="50" cy="50" rx="35" ry="13" stroke="#C9A84C" stroke-width="1" fill="none" stroke-opacity=".4"/>
+      <line x1="50" y1="15" x2="50" y2="85" stroke="#C9A84C" stroke-width="1" stroke-opacity=".4"/>
+      <line x1="15" y1="50" x2="85" y2="50" stroke="#C9A84C" stroke-width="1" stroke-opacity=".4"/>
+      <circle cx="50" cy="50" r="4" fill="#C9A84C"/>
+    </svg>
+    <h2>Model United Nations</h2>
+    <p>Enter your <strong style="color:var(--gold-light)">Groq API key</strong> to power live AI delegates, the Chief Advisor, and real-time Chair responses.<br>Your key stays in your browser only.</p>
+    <input class="api-input" id="apiKeyInput" type="password" placeholder="gsk_••••••••••••••••••••••••••••••••••••••••">
+    <select class="api-model" id="apiModelSel">
+      <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (Recommended)</option>
+      <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (Fast)</option>
+      <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+      <option value="gemma2-9b-it">gemma2-9b-it</option>
+    </select>
+    <button class="btn-primary" onclick="saveApiKey()" style="width:100%">Connect &amp; Continue &rarr;</button>
+    <p class="api-note">Get a free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a> &nbsp;|&nbsp; No key? &nbsp;<button onclick="skipApi()" style="background:none;border:none;color:var(--gold);font-size:.72rem;cursor:pointer;font-family:inherit">Continue with scripted AI →</button></p>
+  </div>
+</div>
+
+<!-- ══ LOBBY ══ -->
+<div id="lobby" class="screen">
+  <div class="lobby-inner">
+    <svg class="un-emblem" viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="47" stroke="#C9A84C" stroke-width="1.5" fill="rgba(201,168,76,0.04)"/>
+      <circle cx="50" cy="50" r="36" stroke="#C9A84C" stroke-width="1" fill="none" stroke-opacity=".55"/>
+      <ellipse cx="50" cy="50" rx="14" ry="36" stroke="#C9A84C" stroke-width="1" fill="none" stroke-opacity=".45"/>
+      <ellipse cx="50" cy="50" rx="36" ry="14" stroke="#C9A84C" stroke-width="1" fill="none" stroke-opacity=".45"/>
+      <line x1="50" y1="14" x2="50" y2="86" stroke="#C9A84C" stroke-width="1" stroke-opacity=".45"/>
+      <line x1="14" y1="50" x2="86" y2="50" stroke="#C9A84C" stroke-width="1" stroke-opacity=".45"/>
+      <circle cx="50" cy="50" r="4" fill="#C9A84C"/>
+    </svg>
+    <h1 class="lobby-title">Model United Nations</h1>
+    <p class="lobby-sub">Security Council Simulation</p>
+    <div class="agenda-badge">Agenda: Nuclear Non-Proliferation &amp; Regional Security Threats</div>
+    <p style="font-size:.77rem;color:rgba(232,201,122,.4);margin-bottom:1.3rem">Select your delegation to represent in committee</p>
+    <div class="country-grid" id="countryGrid"></div>
+    <button class="btn-primary" id="lobbyBtn" disabled onclick="joinCommittee()">Assume Delegation &rarr;</button>
+    <div id="aiStatusBadge" style="margin-top:.9rem"></div>
+  </div>
+</div>
+
+<!-- ══ BRIEFING ══ -->
+<div id="briefing" class="screen">
+  <div class="briefing-inner">
+    <div class="briefing-header">
+      <div class="big-flag" id="bfFlag"></div>
+      <div class="bh-text"><h1 id="bfTitle"></h1><p id="bfSub"></p></div>
+    </div>
+    <div id="bfContent"></div>
+    <div class="brief-actions">
+      <button class="btn-primary" onclick="enterCommittee()">Enter Committee Chamber &rarr;</button>
+      <button class="sc-btn" onclick="showScreen('lobby')">&larr; Change</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ COMMITTEE ══ -->
+<div id="committee" class="screen">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()" style="display:none"></div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>Security Council</h2>
+      <p id="scPhaseLabel">General Speakers List</p>
+    </div>
+    <div class="sb-section">
+      <h4>Phase</h4>
+      <span class="phase-badge gsl" id="phaseBadge">GSL</span>
+    </div>
+    <div class="sb-section" style="flex:1">
+      <h4>Delegations</h4>
+      <div id="delegateList"></div>
+    </div>
+    <div class="score-section">
+      <h4 style="font-size:.6rem;text-transform:uppercase;letter-spacing:.15em;color:rgba(201,168,76,.5);margin-bottom:.38rem;font-weight:600">Your Score</h4>
+      <div class="score-row"><span class="score-label">Diplomacy</span><div class="score-bar-bg"><div class="score-bar-fill" id="barDip" style="width:40%"></div></div><span class="score-num" id="numDip">40</span></div>
+      <div class="score-row"><span class="score-label">Speeches</span><div class="score-bar-bg"><div class="score-bar-fill" id="barSp" style="width:25%"></div></div><span class="score-num" id="numSp">25</span></div>
+      <div class="score-row"><span class="score-label">Negotiation</span><div class="score-bar-bg"><div class="score-bar-fill" id="barNe" style="width:10%"></div></div><span class="score-num" id="numNe">10</span></div>
+      <div class="score-row"><span class="score-label">Crisis</span><div class="score-bar-bg"><div class="score-bar-fill" id="barCr" style="width:30%"></div></div><span class="score-num" id="numCr">30</span></div>
+    </div>
+    <div class="advisor-meter">
+      <div class="advisor-label">Chief Advisor</div>
+      <div class="advisor-dots-row" id="advisorDots"></div>
+      <div class="advisor-left" id="advisorLeft"></div>
+    </div>
+    <div style="padding:.55rem .8rem;border-top:1px solid var(--glass-border);flex-shrink:0">
+      <div id="groqStatusSidebar"></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <div class="committee-header">
+      <div class="ch-left">
+        <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">☰</button>
+        <div>
+          <div class="committee-name">UN Security Council</div>
+          <div class="agenda-text">Nuclear Non-Proliferation &amp; Regional Security</div>
+        </div>
+      </div>
+      <div class="global-stats">
+        <div class="gstat"><div class="gstat-label">Stability</div><div class="gstat-val good" id="gStab">72%</div></div>
+        <div class="gstat"><div class="gstat-label">Tension</div><div class="gstat-val danger" id="gTens">61%</div></div>
+        <div class="gstat"><div class="gstat-label">Session</div><div class="gstat-val" id="gSess">1</div></div>
+        <div class="gstat"><div class="gstat-label">Round</div><div class="gstat-val" id="gRound">1</div></div>
+      </div>
+    </div>
+
+    <div class="main-tabs">
+      <button class="mtab active" onclick="switchTab('debate')">Debate</button>
+      <button class="mtab" onclick="switchTab('gsl')">Speakers</button>
+      <button class="mtab" onclick="switchTab('resolution')">Resolution</button>
+      <button class="mtab" onclick="switchTab('blocs')">Blocs</button>
+      <button class="mtab" onclick="switchTab('tss')">Strategy</button>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="tab-container">
+
+        <!-- DEBATE TAB -->
+        <div id="tab-debate" class="tab-panel active">
+          <div class="podium-card" id="podiumCard">
+            <div class="podium-top">
+              <div class="speaker-info">
+                <div class="speaker-flag" id="spFlag">🎙️</div>
+                <div style="min-width:0">
+                  <div class="speaker-name" id="spName">Awaiting Speaker</div>
+                  <div class="speaker-country" id="spCtry">Chair will recognize next delegate</div>
+                </div>
+              </div>
+              <div class="timer-ring">
+                <svg class="timer-svg" width="54" height="54" viewBox="0 0 54 54">
+                  <circle class="timer-bg" cx="27" cy="27" r="23"/>
+                  <circle class="timer-fg" cx="27" cy="27" r="23" id="timerArc"/>
+                </svg>
+                <div class="timer-num" id="timerNum">90</div>
+              </div>
+            </div>
+            <div class="speech-text" id="speechText">The floor is open. Delegations wishing to join the General Speakers List may indicate.</div>
+            <div class="speech-controls" id="speechCtrl">
+              <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤 Speak</button>
+              <button class="sc-btn gold" onclick="requestSpeech()">Request Floor</button>
+              <button class="sc-btn" onclick="raisePoint('POI')">✋ POI</button>
+              <button class="sc-btn" onclick="raisePoint('POO')">📋 POO</button>
+            </div>
+          </div>
+          <div id="followupArea"></div>
+          <div id="crisisArea"></div>
+          <div class="card">
+            <h3>Pending Motions</h3>
+            <div id="motionList"></div>
+          </div>
+        </div>
+
+        <!-- GSL TAB -->
+        <div id="tab-gsl" class="tab-panel">
+          <div class="card">
+            <h3>General Speakers List</h3>
+            <p class="card-sub">Delegates recognized in order of inscription.</p>
+            <div class="gsl-list" id="gslEl"></div>
+          </div>
+          <div class="card">
+            <h3>Propose a Motion</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+              <button class="sc-btn gold" onclick="proposeMotion('modcau')">Moderated Caucus</button>
+              <button class="sc-btn gold" onclick="proposeMotion('unmod')">Unmoderated Caucus</button>
+              <button class="sc-btn" onclick="proposeMotion('yield')">Yield to Questions</button>
+              <button class="sc-btn danger" onclick="proposeMotion('close')">Close Debate</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESOLUTION TAB -->
+        <div id="tab-resolution" class="tab-panel">
+          <div class="resolution-panel">
+            <div class="res-title">
+              <span>Draft Resolution SC/1/L.1</span>
+              <span class="phase-badge mod" id="resStatus">Drafting</span>
+            </div>
+            <div class="res-meta">
+              Sponsors: <span id="resSponsors">Not yet set</span>&nbsp;|&nbsp;
+              Signatories: <span id="resSignatories" style="color:rgba(232,201,122,.5)">Not yet set</span>
+            </div>
+            <div class="clause-hd">Preambulatory Clauses</div>
+            <div id="preClauses"></div>
+            <button class="sc-btn" style="margin-bottom:.65rem" onclick="addClause('pre')">+ Preambulatory</button>
+            <div class="clause-hd">Operative Clauses</div>
+            <div id="opClauses"></div>
+            <button class="sc-btn" style="margin-bottom:.65rem" onclick="addClause('op')">+ Operative</button>
+            <div class="res-actions">
+              <button class="sc-btn gold" onclick="submitResolution()">Submit to Chair</button>
+              <button class="sc-btn" onclick="aiDraftRes()">✨ AI Draft</button>
+              <button class="sc-btn" onclick="proposeAmendment()">📝 Amendment</button>
+            </div>
+          </div>
+          <div id="amendmentArea"></div>
+          <div class="vote-panel" id="votePanel" style="display:none">
+            <h3>Voting Procedure</h3>
+            <div class="vote-subtitle">Draft Resolution SC/1/L.1 — Recorded vote</div>
+            <div class="vote-grid" id="voteGrid"></div>
+            <div class="vote-actions">
+              <button class="sc-btn gold" id="voteYesBtn" onclick="castVote('yes')">✓ YES</button>
+              <button class="sc-btn danger" id="voteNoBtn" onclick="castVote('no')">✗ NO</button>
+              <button class="sc-btn" id="voteAbsBtn" onclick="castVote('abstain')">– Abstain</button>
+              <div class="vote-result" id="voteResult"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BLOCS TAB -->
+        <div id="tab-blocs" class="tab-panel">
+          <div class="card">
+            <h3>Bloc Formation</h3>
+            <p class="card-sub">Form diplomatic blocs to coordinate voting and co-sponsor resolutions.</p>
+            <div id="blocList"></div>
+            <div style="margin-top:.75rem;display:flex;gap:6px;flex-wrap:wrap">
+              <button class="sc-btn gold" onclick="formBloc()">+ Form Bloc</button>
+              <button class="sc-btn" onclick="joinBloc()">Join Existing</button>
+              <button class="sc-btn danger" onclick="leaveBloc()">Leave Bloc</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Alliance Intelligence</h3>
+            <p class="card-sub">Estimated voting positions based on your intelligence.</p>
+            <div id="allianceIntel"></div>
+          </div>
+        </div>
+
+        <!-- TSS TAB -->
+        <div id="tab-tss" class="tab-panel">
+          <div class="card">
+            <h3>Strategic Actions</h3>
+            <p class="card-sub">Deploy resources to influence global outcomes.</p>
+            <div id="tssActions"></div>
+          </div>
+          <div class="card">
+            <h3>Outcomes Log</h3>
+            <div id="tssLog" style="font-size:.78rem;color:rgba(255,255,255,.34)">No actions deployed this session.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- INLINE CHAT (desktop) -->
+      <div class="chat-area" id="inlineChat">
+        <div class="chat-tabs">
+          <button class="ctab active" onclick="switchChat('floor')">Floor</button>
+          <button class="ctab" onclick="switchChat('private')">Private</button>
+          <button class="ctab" onclick="switchChat('notes')">Notes</button>
+        </div>
+        <div class="chat-msgs" id="chatMsgs"></div>
+        <div class="chat-input-area">
+          <select class="chat-target" id="chatTarget"></select>
+          <textarea class="chat-input" id="chatInput" rows="2" placeholder="Write diplomatic note..."></textarea>
+          <div class="chat-row">
+            <button class="chat-send" onclick="sendNote()">Send Note</button>
+            <button class="chat-mic-btn" id="chatMicBtn" onclick="toggleChatMic()" title="Voice note">🎙️</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <span class="bb-label">Actions</span>
+      <button class="bb-btn gold" onclick="openAdvisor()">🧠 Advisor</button>
+      <button class="bb-btn" onclick="proposeMotion('modcau')">Mod Caucus</button>
+      <button class="bb-btn" onclick="proposeMotion('unmod')">Unmod</button>
+      <button class="bb-btn" onclick="initiateVoting()">Vote</button>
+      <button class="bb-btn" onclick="addToGSL()">+ GSL</button>
+      <button class="bb-btn danger" style="margin-left:auto;border-color:rgba(192,57,43,.34);color:#e08070" onclick="endSimulation()">End</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AWARDS ══ -->
+<div id="awards" class="screen">
+  <div class="awards-inner">
+    <div style="font-size:3rem;margin-bottom:.8rem">🏛️</div>
+    <h1 class="awards-title">Session Concluded</h1>
+    <p class="awards-sub">Performance Evaluation &amp; Awards</p>
+    <div id="awardsContent"></div>
+    <button class="btn-primary" style="margin-top:1.5rem" onclick="showScreen('apiScreen');resetGame()">New Session &rarr;</button>
+  </div>
+</div>
+
+<!-- ══ ADVISOR MODAL ══ -->
+<div class="modal-overlay" id="advisorModal" style="display:none" onclick="bgClose(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAdvisor()">✕</button>
+    <h2>🧠 Chief Policy Advisor</h2>
+    <div class="modal-sub" id="advisorSub">Confidential Strategic Briefing</div>
+    <div id="advisorContent"></div>
+  </div>
+</div>
+
+<!-- CHAT FLOAT (tablet) -->
+<button class="chat-toggle-btn" id="chatToggleBtn" onclick="toggleFloatChat()">💬</button>
+<div class="chat-panel-float" id="chatPanelFloat">
+  <div class="chat-tabs">
+    <button class="ctab active" onclick="switchChat2('floor')">Floor</button>
+    <button class="ctab" onclick="switchChat2('private')">Private</button>
+    <button class="ctab" onclick="switchChat2('notes')">Notes</button>
+  </div>
+  <div class="chat-msgs" id="chatMsgs2"></div>
+  <div class="chat-input-area">
+    <textarea class="chat-input" id="chatInput2" rows="2" placeholder="Write diplomatic note..."></textarea>
+    <div class="chat-row">
+      <button class="chat-send" onclick="sendNote2()">Send</button>
+      <button class="chat-mic-btn" onclick="toggleChatMic()" title="Voice">🎙️</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════
+//  GROQ AI ENGINE
+// ═══════════════════════════════════════════════════════════
+const GROQ={
+  key:'',
+  model:'llama-3.3-70b-versatile',
+  enabled:false,
+  busy:false,
+};
+
+async function groqCall(messages,maxTokens=400){
+  if(!GROQ.enabled||!GROQ.key) return null;
+  GROQ.busy=true;
+  updateGroqStatus('thinking');
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ.key},
+      body:JSON.stringify({model:GROQ.model,messages,max_tokens:maxTokens,temperature:0.8}),
+    });
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      throw new Error(err?.error?.message||'Groq API error '+res.status);
+    }
+    const data=await res.json();
+    updateGroqStatus('ok');
+    GROQ.busy=false;
+    return data.choices?.[0]?.message?.content?.trim()||null;
+  }catch(e){
+    updateGroqStatus('err',e.message);
+    GROQ.busy=false;
+    return null;
+  }
+}
+
+function updateGroqStatus(state,msg=''){
+  const labels={ok:'AI Connected',err:'AI Error',thinking:'AI Thinking...'};
+  const html=`<div class="groq-status ${state}"><span class="groq-dot ${state==='thinking'?'thinking':''}"></span>${labels[state]||state}${msg?': '+msg.slice(0,40):''}</div>`;
+  const el=document.getElementById('groqStatusSidebar');
+  if(el) el.innerHTML=html;
+}
+
+function saveApiKey(){
+  const k=document.getElementById('apiKeyInput').value.trim();
+  if(!k){toast('Please enter your Groq API key.','error');return;}
+  GROQ.key=k;
+  GROQ.model=document.getElementById('apiModelSel').value;
+  GROQ.enabled=true;
+  showScreen('lobby');
+  updateAIBadge(true);
+}
+
+function skipApi(){
+  GROQ.enabled=false;
+  showScreen('lobby');
+  updateAIBadge(false);
+}
+
+function updateAIBadge(live){
+  const el=document.getElementById('aiStatusBadge');
+  if(!el)return;
+  el.innerHTML=live
+    ?'<div class="groq-status ok" style="display:inline-flex"><span class="groq-dot"></span>Live Groq AI Active — '+GROQ.model+'</div>'
+    :'<div class="groq-status err" style="display:inline-flex"><span class="groq-dot"></span>Scripted AI Mode</div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SPEECH RECOGNITION (Microphone)
+// ═══════════════════════════════════════════════════════════
+let SpeechRec=null,recActive=false,recTarget='speech';
+
+function initSpeechRec(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Speech recognition not supported on this browser.','error');return false;}
+  SpeechRec=new SR();
+  SpeechRec.continuous=true;
+  SpeechRec.interimResults=true;
+  SpeechRec.lang='en-US';
+  SpeechRec.onresult=(e)=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    if(recTarget==='speech'){
+      if(interim||final) document.getElementById('speechText').textContent=(final||interim);
+    } else if(recTarget==='chat'){
+      const inp=document.getElementById('chatInput');
+      if(final) inp.value+=(inp.value?' ':'')+final;
+      else if(interim){ /* show interim visually */ }
+    }
+  };
+  SpeechRec.onerror=(e)=>{
+    if(e.error!=='aborted') toast('Mic error: '+e.error,'error');
+    stopMic();
+  };
+  SpeechRec.onend=()=>{if(recActive) SpeechRec.start();};
+  return true;
+}
+
+function toggleMic(){
+  if(recActive&&recTarget==='speech'){stopMic();return;}
+  if(!G.isPlayerSpeaking){
+    toast('Request the floor first before activating the microphone.','error');
+    return;
+  }
+  recTarget='speech';
+  if(!SpeechRec&&!initSpeechRec()) return;
+  try{
+    SpeechRec.start();
+    recActive=true;
+    const btn=document.getElementById('micBtn');
+    btn.classList.add('recording');
+    btn.innerHTML='<span class="live-dot"></span> Recording… (tap to stop)<div class="mic-wave"><span></span><span></span><span></span><span></span><span></span></div>';
+    toast('Microphone active. Speak clearly.','success');
+  }catch(e){toast('Could not start mic: '+e.message,'error');}
+}
+
+function toggleChatMic(){
+  const btn=document.getElementById('chatMicBtn');
+  if(recActive&&recTarget==='chat'){stopMic();return;}
+  recTarget='chat';
+  if(!SpeechRec&&!initSpeechRec()) return;
+  try{
+    SpeechRec.start();
+    recActive=true;
+    btn.classList.add('recording');
+    btn.textContent='🔴';
+    toast('Speak your note…','success');
+  }catch(e){toast('Could not start mic: '+e.message,'error');}
+}
+
+function stopMic(){
+  recActive=false;
+  if(SpeechRec){try{SpeechRec.stop();}catch(e){}}
+  const mb=document.getElementById('micBtn');
+  if(mb){mb.classList.remove('recording');mb.innerHTML='🎤 Speak';}
+  const cb=document.getElementById('chatMicBtn');
+  if(cb){cb.classList.remove('recording');cb.textContent='🎙️';}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TEXT-TO-SPEECH
+// ═══════════════════════════════════════════════════════════
+let ttsActive=false,ttsUtterance=null;
+
+function speakText(text,rate=0.92){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  ttsUtterance=new SpeechSynthesisUtterance(text);
+  ttsUtterance.rate=rate;
+  ttsUtterance.pitch=1;
+  ttsUtterance.volume=1;
+  // Pick a voice if available
+  const voices=window.speechSynthesis.getVoices();
+  const engVoice=voices.find(v=>v.lang.startsWith('en')&&!v.name.includes('Google UK'))||voices[0];
+  if(engVoice) ttsUtterance.voice=engVoice;
+  ttsUtterance.onstart=()=>ttsActive=true;
+  ttsUtterance.onend=()=>{ ttsActive=false; document.querySelectorAll('.tts-btn').forEach(b=>b.classList.remove('playing')); };
+  window.speechSynthesis.speak(ttsUtterance);
+}
+
+function stopTTS(){
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  ttsActive=false;
+  document.querySelectorAll('.tts-btn').forEach(b=>b.classList.remove('playing'));
+}
+
+function ttsBtn(text,btnId){
+  const btn=document.getElementById(btnId);
+  if(ttsActive){stopTTS();if(btn) btn.classList.remove('playing');return;}
+  if(btn) btn.classList.add('playing');
+  speakText(text);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════════════
+const COUNTRIES=[
+  {id:'us',flag:'🇺🇸',name:'United States',bloc:'P5 / NATO',fp:'Maintain global leadership; counter nuclear proliferation; protect allies across Indo-Pacific and Europe.',allies:['uk','fr'],rivals:['ru','cn'],economy:'Advanced economy, $26T GDP. Leading capital and military technology exporter.',stance:'Hawkish on DPRK and Iran; champions IAEA safeguards and maximum-pressure strategy.'},
+  {id:'ru',flag:'🇷🇺',name:'Russian Federation',bloc:'P5 / CSTO',fp:'Reassert strategic sphere; block NATO expansion; oppose extraterritorial sanctions.',allies:['cn'],rivals:['us','uk'],economy:'Resource-dependent, $2.2T GDP. Dominant gas supplier to Europe.',stance:'Opposes new Iran sanctions; advocates dialogue over coercion.'},
+  {id:'cn',flag:'🇨🇳',name:'China',bloc:'P5 / SCO',fp:'Peaceful rise doctrine; non-interference; protect Belt and Road interests.',allies:['ru'],rivals:['us'],economy:'Manufacturing giant, $18T GDP.',stance:'Prefers negotiated settlement; wary of precedents near Taiwan Strait.'},
+  {id:'uk',flag:'🇬🇧',name:'United Kingdom',bloc:'P5 / NATO',fp:'Preserve transatlantic partnership; enforce international law; champion NPT.',allies:['us','fr'],rivals:['ru'],economy:'Services-led, $3.1T GDP.',stance:'Strong IAEA advocate; supports targeted smart sanctions.'},
+  {id:'fr',flag:'🇫🇷',name:'France',bloc:'P5 / EU / NATO',fp:'Strategic autonomy; Francophone sphere; multilateral diplomacy.',allies:['uk','us'],rivals:['ru'],economy:'Mixed industrial, $3T GDP.',stance:'Values diplomatic track; supports comprehensive nuclear agreement.'},
+  {id:'jp',flag:'🇯🇵',name:'Japan',bloc:'G7 / US Ally',fp:'Non-nuclear three principles; rules-based order; collective self-defence.',allies:['us','uk'],rivals:[],economy:'Technology leader, $4.2T GDP.',stance:'Urgent concern over DPRK missiles; advocates strongest SC language.'},
+  {id:'in',flag:'🇮🇳',name:'India',bloc:'G20 / Quad',fp:'Strategic autonomy; regional leadership; no extraterritorial sanctions.',allies:[],rivals:[],economy:'Fastest-growing major economy.',stance:'Balances all parties; concerned about Pakistani nuclear program.'},
+  {id:'br',flag:'🇧🇷',name:'Brazil',bloc:'BRICS / CELAC',fp:'South-South solidarity; multilateralism; oppose regime-change doctrines.',allies:[],rivals:[],economy:'Commodity exporter, $2T GDP.',stance:'Advocates universal disarmament; non-interventionist.'},
+  {id:'de',flag:'🇩🇪',name:'Germany',bloc:'EU / NATO',fp:'Rules-based order; human rights; engagement over isolation.',allies:['fr','uk'],rivals:['ru'],economy:'Industrial export powerhouse, $4.4T GDP.',stance:'Supports JCPOA revival; prefers dialogue.'},
+  {id:'za',flag:'🇿🇦',name:'South Africa',bloc:'AU / BRICS',fp:'Pan-African unity; nuclear-free zones; developing-world voice.',allies:[],rivals:[],economy:'Most industrialized African economy.',stance:'Champions nuclear disarmament; NPT universality advocate.'},
+];
+
+const FALLBACK_SPEECHES={
+  us:'🇺🇸 Distinguished delegates, the United States reaffirms that nuclear proliferation constitutes an existential threat. We call on all states to support robust IAEA verification and condemn any acquisition of weapons-grade materials outside the NPT framework.',
+  ru:'🇷🇺 The Russian Federation reminds this Council that sovereign states retain inalienable rights to peaceful nuclear energy. We oppose politically motivated sanctions that undermine legitimate national development.',
+  cn:'🇨🇳 China consistently advocates peaceful resolution through consultation. Escalatory rhetoric serves no purpose. We must respect sovereignty while pursuing arms control through inclusive multilateral frameworks.',
+  uk:'🇬🇧 The United Kingdom stands firmly with the Non-Proliferation Treaty as the cornerstone of global disarmament architecture. We urge all parties to return to negotiations and accept comprehensive IAEA safeguards.',
+  fr:'🇫🇷 France believes a comprehensive diplomatic solution remains achievable. Our delegation supports a phased verification process and is prepared to offer technical expertise to facilitate confidence-building.',
+  jp:'🇯🇵 Japan, as the only nation to have experienced nuclear devastation, speaks with unique moral authority. Ongoing missile provocations demand urgent Council action without further delay.',
+  in:'🇮🇳 India maintains universal disarmament must be our ultimate objective. We caution against double standards in applying non-proliferation norms. All states must be held to equal and transparent standards.',
+  br:'🇧🇷 Brazil urges this body to consider the humanitarian dimension of proliferation. As a state that voluntarily renounced nuclear weapons, we call for concrete P5 disarmament commitments.',
+  de:'🇩🇪 Germany believes sustainable security requires genuine dialogue. Sanctions without a clear negotiated pathway risk entrenching divisions and delaying the comprehensive solution this situation demands.',
+  za:'🇿🇦 South Africa speaks from a continent with the world\'s first nuclear-weapons-free zone. We demand nuclear-armed states honour their Article VI disarmament obligations.',
+};
+
+const CRISES=[
+  {title:'Hypersonic Missile Test Detected',desc:'DPRK conducted a hypersonic glide vehicle test over the Sea of Japan, landing 200 km from Japanese waters. Regional powers demand emergency SC consultations.',sev:'CRITICAL',dt:16,ds:-13},
+  {title:'Cyber Attack on Nuclear Facility',desc:'A sophisticated intrusion compromised monitoring systems at a uranium enrichment facility. Attribution disputed. IAEA inspectors denied access.',sev:'HIGH',dt:11,ds:-9},
+  {title:'Humanitarian Crisis Escalation',desc:'130,000 civilians displaced by airstrikes near a nuclear research zone. Corridors blocked. ICRC reports critical shortages.',sev:'HIGH',dt:9,ds:-6},
+  {title:'Weapons-Grade Enrichment Confirmed',desc:'IAEA data confirms enrichment to 84%. Breakout timeline revised to 5-6 weeks. Satellite imagery reveals undeclared centrifuge halls.',sev:'CRITICAL',dt:22,ds:-16},
+  {title:'Sanctions Coalition Fractures',desc:'Two member states issued waivers exempting key energy sectors from the sanctions regime, undermining collective pressure.',sev:'MEDIUM',dt:7,ds:-5},
+];
+
+const TSS=[
+  {id:'sanction',icon:'💸',label:'Coordinated Economic Sanctions',desc:'Target financial systems for maximum economic pressure.',cost:20,dt:5,ds:-3},
+  {id:'peace',icon:'🕊️',label:'Deploy Peacekeeping Mission',desc:'Authorize UN blue helmets for the disputed zone.',cost:25,dt:-3,ds:8},
+  {id:'aid',icon:'🏥',label:'Emergency Humanitarian Aid',desc:'Deliver aid to displaced civilians. Builds goodwill.',cost:15,dt:-2,ds:6},
+  {id:'intel',icon:'🔍',label:'Intelligence Sharing Operation',desc:'Share verified intel with allied delegations.',cost:10,dt:3,ds:2},
+  {id:'diplo',icon:'🤝',label:'Emergency Bilateral Talks',desc:'Direct talks with antagonist state. Low cost.',cost:5,dt:-9,ds:5},
+  {id:'naval',icon:'⚓',label:'Naval Deterrence Patrol',desc:'Deploy carrier group. Escalation risk.',cost:30,dt:11,ds:-3},
+];
+
+const MOTIONS=[
+  {id:'modcau',text:'Moderated Caucus (45 min, 90s speeches)'},
+  {id:'unmod',text:'Unmoderated Caucus (20 min)'},
+  {id:'yield',text:'Yield Remaining Time to Questions'},
+  {id:'close',text:'Close Debate and Proceed to Vote'},
+];
+
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let G={
+  country:null,phase:'gsl',session:1,round:1,
+  stability:72,tension:61,advisorUses:3,
+  timer:null,spkr:null,timeLeft:90,isPlayerSpeaking:false,
+  scores:{diplomacy:40,speeches:25,negotiation:10,crisis:30},
+  gsl:[],msgs:[],pvtMsgs:[],chatTab:'floor',activeTab:'debate',
+  votes:{},votingDone:false,playerVoted:false,
+  resSubmitted:false,crisisActive:false,tssUsed:[],
+  blocs:[],myBloc:null,crisisTimer:null,pendingFollowup:null,
+  sidebarOpen:false,floatChatOpen:false,
+};
+
+// ═══════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+}
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function toast(msg,type=''){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:'');
+  el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),350);},3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESPONSIVE SIDEBAR
+// ═══════════════════════════════════════════════════════════
+function toggleSidebar(){
+  G.sidebarOpen=!G.sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('open',G.sidebarOpen);
+  document.getElementById('sidebarOverlay').style.display=G.sidebarOpen?'block':'none';
+}
+function closeSidebar(){
+  G.sidebarOpen=false;
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').style.display='none';
+}
+function toggleFloatChat(){
+  G.floatChatOpen=!G.floatChatOpen;
+  document.getElementById('chatPanelFloat').classList.toggle('open',G.floatChatOpen);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOBBY
+// ═══════════════════════════════════════════════════════════
+function initLobby(){
+  document.getElementById('countryGrid').innerHTML=
+    COUNTRIES.map(c=>`<div class="country-card" id="cc-${c.id}" onclick="pickCountry('${c.id}')">
+      <div class="cc-flag">${c.flag}</div>
+      <div class="cc-name">${c.name}</div>
+      <div class="cc-bloc">${c.bloc}</div>
+    </div>`).join('');
+}
+function pickCountry(id){
+  document.querySelectorAll('.country-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('cc-'+id)?.classList.add('selected');
+  G.country=COUNTRIES.find(c=>c.id===id);
+  document.getElementById('lobbyBtn').disabled=false;
+}
+function joinCommittee(){if(!G.country) return; showBriefing();}
+
+// ═══════════════════════════════════════════════════════════
+//  BRIEFING
+// ═══════════════════════════════════════════════════════════
+function showBriefing(){
+  showScreen('briefing');
+  const c=G.country;
+  document.getElementById('bfFlag').textContent=c.flag;
+  document.getElementById('bfTitle').textContent='Delegation of '+c.name;
+  document.getElementById('bfSub').textContent=c.bloc+' · UN Security Council';
+  const aNames=c.allies.map(id=>COUNTRIES.find(x=>x.id===id)?.name||id);
+  const rNames=c.rivals.map(id=>COUNTRIES.find(x=>x.id===id)?.name||id);
+  document.getElementById('bfContent').innerHTML=`
+    <div class="brief-section"><h3>Foreign Policy Mandate</h3><p>${c.fp}</p></div>
+    <div class="brief-section"><h3>Economic Profile</h3><p>${c.economy}</p></div>
+    <div class="brief-section"><h3>Agenda Position</h3><p>${c.stance}</p></div>
+    <div class="brief-section">
+      <h3>Alliance Architecture</h3>
+      <div class="priority-tags">
+        <span style="font-size:.75rem;color:rgba(255,255,255,.4);margin-right:2px">Allies:</span>
+        ${aNames.length?aNames.map(n=>`<span class="tag green">${n}</span>`).join(''):'<span class="tag">Non-aligned</span>'}
+        <span style="font-size:.75rem;color:rgba(255,255,255,.4);margin-left:6px;margin-right:2px">Rivals:</span>
+        ${rNames.length?rNames.map(n=>`<span class="tag red">${n}</span>`).join(''):'<span class="tag">None</span>'}
+      </div>
+    </div>
+    <div class="brief-section">
+      <h3>Standing Instructions</h3>
+      <div class="priority-tags">
+        <span class="tag blue">Uphold ${c.name}&apos;s sovereignty</span>
+        <span class="tag">Pursue consensus</span>
+        <span class="tag blue">Protect economic interests</span>
+        <span class="tag">Engage all parties diplomatically</span>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ENTER COMMITTEE
+// ═══════════════════════════════════════════════════════════
+function enterCommittee(){
+  showScreen('committee');
+  initCommittee();
+}
+
+function initCommittee(){
+  const others=COUNTRIES.filter(x=>x.id!==G.country.id);
+  G.gsl=[G.country,...others.slice(0,7)].map(x=>({...x,status:'waiting'}));
+  G.gsl[1].status='next';
+  const sel=document.getElementById('chatTarget');
+  sel.innerHTML='<option value="floor">→ All (Floor)</option>'+
+    G.gsl.filter(d=>d.id!==G.country.id).map(d=>`<option value="${d.id}">→ Private: ${d.flag} ${d.name}</option>`).join('');
+  renderDelegates();renderGSL();renderAdvisor();renderTSS();renderMotions();renderVoteGrid();renderBlocs();renderAllianceIntel();
+  if(GROQ.enabled) updateGroqStatus('ok');
+  addMsg('chair','Chair','The Security Council is now in session. The agenda concerns Nuclear Non-Proliferation and Regional Security Threats. We commence with the General Speakers List.');
+  addMsg('system','','— Session 1 opened —');
+  setTimeout(()=>{
+    const ai=G.gsl[1];
+    addMsg('delegate',ai.name,`${ai.flag} The delegation of ${ai.name} requests inscription on the General Speakers List.`);
+    setTimeout(()=>startAISpeech(ai),3200);
+  },4000);
+  G.crisisTimer=setTimeout(triggerCrisis,32000+Math.random()*12000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER HELPERS
+// ═══════════════════════════════════════════════════════════
+function renderDelegates(){
+  document.getElementById('delegateList').innerHTML=G.gsl.map(d=>`
+    <div class="delegate-row ${d.id===G.country.id?'me':''} ${G.spkr?.id===d.id?'speaking':''}">
+      <div class="d-flag">${d.flag}</div>
+      <div class="d-name">${d.id===G.country.id?'★ ':''} ${d.name}</div>
+      <div class="d-dot ${G.spkr?.id===d.id?'speaking':'active'}"></div>
+    </div>`).join('');
+}
+function renderGSL(){
+  document.getElementById('gslEl').innerHTML=G.gsl.map((d,i)=>{
+    const isSp=G.spkr?.id===d.id;
+    return `<div class="gsl-item">
+      <span class="gsl-num">${i+1}</span>
+      <span class="gsl-flag">${d.flag}</span>
+      <span class="gsl-name">${d.name}${d.id===G.country.id?' ★':''}</span>
+      <span class="gsl-badge ${isSp?'speaking':d.status}">${isSp?'speaking':d.status}</span>
+    </div>`;
+  }).join('');
+}
+function renderAdvisor(){
+  document.getElementById('advisorDots').innerHTML=[0,1,2].map(i=>`<div class="adot ${i<G.advisorUses?'avail':''}"></div>`).join('');
+  document.getElementById('advisorLeft').textContent=`${G.advisorUses} use${G.advisorUses!==1?'s':''} left`;
+}
+function setPhase(p){
+  G.phase=p;
+  const lbl={gsl:'General Speakers List',mod:'Moderated Caucus',unmod:'Unmoderated Caucus',vote:'Voting Procedure',crisis:'CRISIS — Emergency'};
+  document.getElementById('phaseBadge').textContent=p.toUpperCase();
+  document.getElementById('phaseBadge').className='phase-badge '+p;
+  document.getElementById('scPhaseLabel').textContent=lbl[p]||p;
+}
+function updateStats(){
+  const s=document.getElementById('gStab');s.textContent=G.stability+'%';s.className='gstat-val '+(G.stability>50?'good':'danger');
+  const t=document.getElementById('gTens');t.textContent=G.tension+'%';t.className='gstat-val '+(G.tension<50?'good':'danger');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SPEECH SYSTEM
+// ═══════════════════════════════════════════════════════════
+const TIMER_C=145; // 2*pi*23
+
+function setTimerDisplay(t){
+  document.getElementById('timerNum').textContent=t;
+  document.getElementById('timerArc').style.strokeDashoffset=TIMER_C*(1-(t/90));
+  document.getElementById('timerArc').style.stroke=t<=15?'#e08070':t<=30?'#EF9F27':'var(--gold)';
+}
+function resetTimerDisplay(){
+  document.getElementById('timerNum').textContent=90;
+  document.getElementById('timerArc').style.strokeDashoffset=TIMER_C;
+  document.getElementById('timerArc').style.stroke='var(--gold)';
+}
+
+function requestSpeech(){
+  if(G.spkr){toast('A delegate holds the floor. Please wait.','error');return;}
+  const c=G.country;
+  addMsg('chair','Chair',`The Chair recognizes the distinguished delegate of ${c.name}. You have 90 seconds.`);
+  startPlayerSpeech(c);
+}
+
+function startPlayerSpeech(delegate){
+  clearInterval(G.timer);
+  G.spkr=delegate; G.isPlayerSpeaking=true; G.timeLeft=90;
+  document.getElementById('podiumCard').classList.add('live');
+  document.getElementById('spFlag').textContent=delegate.flag;
+  document.getElementById('spName').textContent=delegate.name;
+  document.getElementById('spCtry').textContent=delegate.bloc;
+  document.getElementById('speechText').textContent='You have the floor. Tap 🎤 Speak to use your microphone, or your speech will be recorded as text.';
+  document.getElementById('speechCtrl').innerHTML=`
+    <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤 Speak</button>
+    <span class="live-badge"><span class="live-dot"></span> LIVE</span>
+    <button class="sc-btn danger" onclick="yieldFloor()">Yield Floor</button>
+    <button class="sc-btn" onclick="yieldToQuestions()">Yield to Questions</button>`;
+  setTimerDisplay(90); renderDelegates(); renderGSL();
+  G.timer=setInterval(()=>{
+    G.timeLeft--;setTimerDisplay(G.timeLeft);
+    if(G.timeLeft<=0){clearInterval(G.timer);stopMic();addMsg('chair','Chair','Time has expired.');score('speeches',5);endSpeech();}
+  },1000);
+}
+
+async function startAISpeech(delegate){
+  if(G.spkr){setTimeout(()=>startAISpeech(delegate),3500+Math.random()*2500);return;}
+  clearInterval(G.timer);
+  G.spkr=delegate; G.isPlayerSpeaking=false; G.timeLeft=90;
+  document.getElementById('podiumCard').classList.add('live');
+  document.getElementById('spFlag').textContent=delegate.flag;
+  document.getElementById('spName').textContent=delegate.name;
+  document.getElementById('spCtry').textContent=delegate.bloc;
+  document.getElementById('speechCtrl').innerHTML=`
+    <button class="sc-btn" onclick="raisePoint('POI')">✋ POI</button>
+    <button class="sc-btn" onclick="raisePoint('POO')">📋 POO</button>`;
+  renderDelegates(); renderGSL();
+  setTimerDisplay(90);
+
+  // Get speech text (Groq or fallback)
+  let speechText=FALLBACK_SPEECHES[delegate.id]||`${delegate.flag} The delegation of ${delegate.name} calls for a balanced, evidence-based approach respecting both security imperatives and sovereign rights.`;
+  if(GROQ.enabled&&!GROQ.busy){
+    const country=COUNTRIES.find(c=>c.id===delegate.id);
+    const prompt=`You are the delegate of ${delegate.name} (${delegate.bloc}) at a UN Security Council session on Nuclear Non-Proliferation and Regional Security Threats. Their foreign policy: "${country?.fp}". Their agenda stance: "${country?.stance}". Give a 2-3 sentence formal MUN speech in character. Start with "${delegate.flag} Distinguished delegates,". Be specific to their position. No preamble, just the speech.`;
+    const aiText=await groqCall([{role:'user',content:prompt}],200);
+    if(aiText) speechText=aiText;
+  }
+
+  document.getElementById('speechText').textContent=speechText;
+  // TTS button + auto-speak
+  const ttsId='tts_'+Date.now();
+  document.getElementById('speechCtrl').innerHTML+=` <button class="tts-btn" id="${ttsId}" onclick="ttsBtn('${speechText.replace(/'/g,"\\'")}','${ttsId}')" title="Listen to speech">🔊</button>`;
+  addMsg('delegate',delegate.name,speechText.slice(0,130)+'…',speechText);
+
+  G.timer=setInterval(()=>{
+    G.timeLeft--;setTimerDisplay(G.timeLeft);
+    if(G.timeLeft<=0){
+      clearInterval(G.timer);
+      const saved=delegate;
+      endSpeech();
+      G.pendingFollowup=saved;
+      setTimeout(()=>{maybeFollowup(G.pendingFollowup);G.pendingFollowup=null;setTimeout(scheduleNextAI,3500+Math.random()*2000);},700);
+    }
+  },1000);
+}
+
+function endSpeech(){
+  clearInterval(G.timer);stopMic();
+  G.spkr=null;G.isPlayerSpeaking=false;
+  document.getElementById('podiumCard').classList.remove('live');
+  document.getElementById('spFlag').textContent='🎙️';
+  document.getElementById('spName').textContent='Awaiting Speaker';
+  document.getElementById('spCtry').textContent='Chair will recognize next delegate';
+  document.getElementById('speechText').textContent='The floor is open. Delegations may request to be recognized.';
+  document.getElementById('speechCtrl').innerHTML=`
+    <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤 Speak</button>
+    <button class="sc-btn gold" onclick="requestSpeech()">Request Floor</button>
+    <button class="sc-btn" onclick="raisePoint('POI')">✋ POI</button>
+    <button class="sc-btn" onclick="raisePoint('POO')">📋 POO</button>`;
+  resetTimerDisplay();
+  G.round++;document.getElementById('gRound').textContent=G.round;
+  if(G.round%3===0){G.session++;document.getElementById('gSess').textContent=G.session;addMsg('system','',`— Session ${G.session} commenced —`);}
+  renderDelegates();renderGSL();
+}
+
+function yieldFloor(){clearInterval(G.timer);stopMic();addMsg('chair','Chair','The delegate yields the floor.');score('speeches',3);endSpeech();}
+function yieldToQuestions(){
+  clearInterval(G.timer);stopMic();
+  addMsg('chair','Chair','The delegate yields to questions. Does any delegation wish to pose a question?');
+  endSpeech();score('speeches',8);score('diplomacy',5);
+  const others=G.gsl.filter(d=>d.id!==G.country.id);
+  const q=rand(others);
+  setTimeout(()=>addMsg('delegate',q.name,`${q.flag} Would the distinguished delegate clarify their position on IAEA verification timelines and enforcement mechanisms?`),2000);
+}
+function raisePoint(type){
+  const lbl={POI:'Point of Information',POO:'Point of Order'};
+  addMsg('chair','Chair',`The Chair acknowledges the ${lbl[type]} from ${G.country.name}.`);
+  score('diplomacy',3);
+}
+
+async function maybeFollowup(delegate){
+  if(!delegate||Math.random()>0.45) return;
+  let q='';
+  if(GROQ.enabled&&!GROQ.busy){
+    const p=`You are the Chair of the UN Security Council. The delegate of ${delegate?.name} just spoke about nuclear non-proliferation. Ask them ONE sharp, challenging follow-up question (1-2 sentences) that forces them to defend or clarify their country's position. Be specific. No preamble.`;
+    const ai=await groqCall([{role:'user',content:p}],120);
+    if(ai) q=ai;
+  }
+  if(!q){
+    q=rand([
+      `The Chair questions the delegation of ${delegate?.name}: How does your government respond to critics who say existing IAEA safeguards are already sufficient?`,
+      `The Chair challenges ${delegate?.name}: How does your delegation reconcile its stated non-proliferation commitment with your own historical nuclear programme?`,
+      `The Chair asks ${delegate?.name} directly: Does your delegation support Chapter VII emergency measures, or exclusively the diplomatic track? Please be specific.`,
+      `The Chair presses ${delegate?.name}: What exact verification timeline and enforcement mechanism does your delegation envision?`,
+    ]);
+  }
+  const el=document.getElementById('followupArea');
+  const ttsId='fu_'+Date.now();
+  el.innerHTML=`<div class="followup-card">
+    <h3>⚖️ Chair Follow-up <button class="tts-btn" id="${ttsId}" onclick="ttsBtn('${q.replace(/'/g,"\\'")}','${ttsId}')" title="Listen">🔊</button></h3>
+    <p>${q}</p>
+    <button class="sc-btn gold" style="margin-top:.7rem" onclick="respondToChair()">Respond as ${G.country.flag} ${G.country.name}</button>
+    <button class="sc-btn" style="margin-top:.7rem;margin-left:5px" onclick="dismissFollowup()">Pass</button>
+  </div>`;
+}
+
+function respondToChair(){document.getElementById('followupArea').innerHTML='';addMsg('chair','Chair',`The Chair recognizes ${G.country.name} for a response.`);score('speeches',8);score('diplomacy',5);requestSpeech();}
+function dismissFollowup(){document.getElementById('followupArea').innerHTML='';addMsg('system','','— Delegation passed on follow-up —');}
+function scheduleNextAI(){
+  if(G.spkr||G.votingActive||G.crisisActive) return;
+  const eligible=G.gsl.filter(d=>d.id!==G.country.id);
+  if(!eligible.length) return;
+  const next=rand(eligible);
+  addMsg('chair','Chair',`The Chair recognizes the distinguished delegate of ${next.name}.`);
+  setTimeout(()=>startAISpeech(next),1800);
+}
+function addToGSL(){
+  const mine=G.gsl.find(d=>d.id===G.country.id);
+  if(mine&&mine.status==='waiting'){mine.status='next';renderGSL();toast('Added to GSL.','success');}
+  else toast('Already inscribed.','error');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MOTIONS
+// ═══════════════════════════════════════════════════════════
+function renderMotions(){
+  document.getElementById('motionList').innerHTML=MOTIONS.map(m=>`
+    <div class="motion-item">
+      <span class="motion-text">${m.text}</span>
+      <div class="motion-btns">
+        <button class="m-yes" onclick="proposeMotion('${m.id}')">For</button>
+        <button class="m-no">Against</button>
+      </div>
+    </div>`).join('');
+}
+function proposeMotion(id){
+  const m=MOTIONS.find(x=>x.id===id);if(!m) return;
+  addMsg('chair','Chair',`${G.country.name} moves: "${m.text}". Is there a second?`);
+  score('diplomacy',4);
+  const other=G.gsl.find(d=>d.id!==G.country.id);
+  setTimeout(()=>{
+    addMsg('delegate',other.name,`${other.flag} ${other.name} seconds the motion.`);
+    setTimeout(()=>executeMotion(id),1800);
+  },2000);
+}
+function executeMotion(id){
+  if(id==='close'){initiateVoting();return;}
+  if(id==='yield'){yieldFloor();return;}
+  const nm={modcau:'Moderated Caucus (45 min)',unmod:'Unmoderated Caucus (20 min)'};
+  const pm={modcau:'mod',unmod:'unmod'};
+  setPhase(pm[id]||'gsl');
+  addMsg('chair','Chair',`Motion passes. Committee enters ${nm[id]||'next phase'}.`);
+  if(id==='unmod'){
+    addMsg('system','','— Unmoderated caucus. Free consultation permitted. —');score('negotiation',8);
+    setTimeout(()=>{setPhase('gsl');addMsg('chair','Chair','Unmoderated caucus concluded. Resuming formal session.');if(!G.spkr) scheduleNextAI();},20000);
+  }
+  if(id==='modcau') setTimeout(()=>{setPhase('gsl');addMsg('chair','Chair','Moderated caucus concluded.');},45000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CRISIS
+// ═══════════════════════════════════════════════════════════
+async function triggerCrisis(){
+  if(G.crisisActive||G.votingActive){G.crisisTimer=setTimeout(triggerCrisis,20000);return;}
+  G.crisisActive=true;
+  const c=rand(CRISES);
+  G.tension=clamp(G.tension+c.dt,0,100);G.stability=clamp(G.stability+c.ds,0,100);
+  updateStats();setPhase('crisis');
+  toast('⚠️ '+c.title,'error');
+
+  let crisisDetail=c.desc;
+  if(GROQ.enabled&&!GROQ.busy){
+    const p=`You are a UN crisis briefing officer. Describe this Security Council crisis in 2 vivid sentences adding operational detail: "${c.title} — ${c.desc}". Be specific and urgent.`;
+    const ai=await groqCall([{role:'user',content:p}],120);
+    if(ai) crisisDetail=ai;
+  }
+
+  const ttsId='cr_'+Date.now();
+  document.getElementById('crisisArea').innerHTML=`<div class="crisis-alert">
+    <div class="crisis-hd">⚠️ ${c.title} <span class="crisis-sev">${c.sev}</span>
+      <button class="tts-btn" id="${ttsId}" onclick="ttsBtn('${crisisDetail.replace(/'/g,"\\'")}','${ttsId}')" title="Listen">🔊</button>
+    </div>
+    <div class="crisis-body">${crisisDetail}</div>
+    <div class="crisis-btns">
+      <button class="sc-btn danger" onclick="respondCrisis('resolution')">Emergency Resolution</button>
+      <button class="sc-btn gold" onclick="respondCrisis('directive')">Presidential Directive</button>
+      <button class="sc-btn" onclick="respondCrisis('tss')">Deploy Strategic Action</button>
+    </div>
+  </div>`;
+  addMsg('crisis','⚠️ BREAKING',`${c.title} — ${crisisDetail}`);
+  switchTab('debate');
+  setTimeout(()=>{
+    if(G.crisisActive){
+      G.crisisActive=false;setPhase('gsl');document.getElementById('crisisArea').innerHTML='';
+      addMsg('system','','— Crisis period elapsed. Formal session resumes. —');
+      if(!G.spkr) scheduleNextAI();
+      G.crisisTimer=setTimeout(triggerCrisis,40000+Math.random()*20000);
+    }
+  },18000);
+}
+function respondCrisis(type){
+  if(!G.crisisActive) return;
+  const r={resolution:`${G.country.flag} ${G.country.name} sponsors an emergency resolution calling for de-escalation, international monitoring, and unimpeded humanitarian access.`,directive:`${G.country.flag} ${G.country.name} issues a presidential directive convening P5 emergency consultations within 48 hours.`,tss:`${G.country.flag} ${G.country.name} activates pre-positioned strategic assets and coordinates with allied delegations.`};
+  addMsg('delegate',G.country.name,r[type]);
+  G.stability=clamp(G.stability+7,0,100);G.tension=clamp(G.tension-7,0,100);
+  updateStats();score('crisis',14);
+  G.crisisActive=false;setPhase('gsl');document.getElementById('crisisArea').innerHTML='';
+  toast('Crisis response filed.','success');
+  G.crisisTimer=setTimeout(triggerCrisis,40000+Math.random()*20000);
+  if(!G.spkr) scheduleNextAI();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESOLUTION
+// ═══════════════════════════════════════════════════════════
+function addClause(type){
+  const pre=['Reaffirming','Deeply concerned by','Noting with appreciation','Recalling','Recognizing','Bearing in mind','Convinced that','Welcoming'];
+  const op=['Calls upon','Strongly urges','Demands','Requests the Secretary-General to','Decides','Encourages','Authorizes','Affirms'];
+  const opts=type==='pre'?pre:op;
+  const prefix=rand(opts);
+  const container=document.getElementById(type==='pre'?'preClauses':'opClauses');
+  const d=document.createElement('div');d.className='res-clause';
+  d.innerHTML=`<span class="clause-type ${type}">${type==='pre'?'PP':'OP'}</span><input class="clause-input" value="${prefix} " placeholder="Continue clause…"><button class="clause-del" onclick="this.parentElement.remove()">✕</button>`;
+  container.appendChild(d);
+}
+function submitResolution(){
+  if(document.getElementById('preClauses').children.length<1||document.getElementById('opClauses').children.length<1){toast('Need at least one PP and one OP clause.','error');return;}
+  if(G.resSubmitted){toast('Already submitted.','error');return;}
+  G.resSubmitted=true;
+  document.getElementById('resStatus').textContent='Under Review';document.getElementById('resStatus').className='phase-badge unmod';
+  addMsg('chair','Chair','Draft Resolution SC/1/L.1 received. It will be formally introduced for debate.');
+  score('diplomacy',15);toast('Resolution submitted.','success');
+  setTimeout(()=>{document.getElementById('resStatus').textContent='Introduced';document.getElementById('resStatus').className='phase-badge mod';addMsg('chair','Chair','SC/1/L.1 is formally before the committee. Debate is in order.');},4000);
+}
+async function aiDraftRes(){
+  document.getElementById('preClauses').innerHTML='';document.getElementById('opClauses').innerHTML='';
+  let prePhrases=[['Reaffirming','the centrality of the Non-Proliferation Treaty as the cornerstone of global disarmament'],['Deeply concerned by','the deteriorating regional security situation and its implications for international peace'],['Noting with appreciation','the ongoing efforts of the IAEA in maintaining rigorous monitoring under established safeguards'],['Recalling','all relevant Security Council resolutions and the obligations of member states under international law']];
+  let opPhrases=[['Calls upon','all member states to reaffirm their NPT commitments and relevant Security Council resolutions'],['Authorizes','the Secretary-General to appoint a Special Envoy to facilitate multilateral negotiations within thirty days'],['Demands','the immediate cessation of all activities inconsistent with NPT obligations and full IAEA cooperation'],['Decides','to remain seized of this matter and convene an emergency session should the situation deteriorate']];
+
+  if(GROQ.enabled&&!GROQ.busy){
+    const p=`Draft a UN Security Council resolution on Nuclear Non-Proliferation and Regional Security Threats. Provide exactly 3 preambulatory clauses and 3 operative clauses. Format as JSON: {"pre":[["StarterWord","rest of clause"],...],"op":[["StarterWord","rest of clause"],...]}. Only JSON, no other text.`;
+    const ai=await groqCall([{role:'user',content:p}],500);
+    if(ai){try{const parsed=JSON.parse(ai.replace(/```json|```/g,'').trim());if(parsed.pre?.length&&parsed.op?.length){prePhrases=parsed.pre;opPhrases=parsed.op;}}catch(e){}}
+  }
+
+  const pre=document.getElementById('preClauses');const op=document.getElementById('opClauses');
+  prePhrases.forEach(([p,t])=>{const d=document.createElement('div');d.className='res-clause';d.innerHTML=`<span class="clause-type pre">PP</span><div class="clause-text"><strong>${p}</strong> ${t}</div><button class="clause-del" onclick="this.parentElement.remove()">✕</button>`;pre.appendChild(d);});
+  opPhrases.forEach(([p,t])=>{const d=document.createElement('div');d.className='res-clause';d.innerHTML=`<span class="clause-type op">OP</span><div class="clause-text"><strong>${p}</strong> ${t}</div><button class="clause-del" onclick="this.parentElement.remove()">✕</button>`;op.appendChild(d);});
+  const allyNames=G.gsl.filter(d=>G.country.allies.includes(d.id)).map(d=>d.name);
+  document.getElementById('resSponsors').textContent=G.country.name+(allyNames.length?', '+allyNames.join(', '):'');
+  document.getElementById('resSignatories').textContent=G.gsl.slice(0,4).map(d=>d.name).join(', ');
+  toast('AI draft generated.','success');
+}
+function proposeAmendment(){
+  document.getElementById('amendmentArea').innerHTML=`<div class="card" style="border-color:rgba(21,101,192,.3)">
+    <h3 style="color:#8ab4f0">📝 Propose Amendment</h3>
+    <select style="width:100%;margin-bottom:7px;padding:5px 8px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:5px;color:var(--cream);font-family:inherit;font-size:.76rem"><option>Friendly Amendment</option><option>Unfriendly Amendment</option></select>
+    <input type="text" placeholder="Describe the proposed amendment..." style="width:100%;margin-bottom:7px;padding:5px 8px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:5px;color:var(--cream);font-family:inherit;font-size:.76rem">
+    <div style="display:flex;gap:6px">
+      <button class="sc-btn gold" onclick="submitAmendment()">Submit</button>
+      <button class="sc-btn" onclick="document.getElementById('amendmentArea').innerHTML=''">Cancel</button>
+    </div>
+  </div>`;
+}
+function submitAmendment(){
+  addMsg('chair','Chair',`${G.country.name} has proposed an amendment to SC/1/L.1. It will be considered during the next moderated caucus.`);
+  document.getElementById('amendmentArea').innerHTML='';score('diplomacy',10);toast('Amendment submitted.','success');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  VOTING
+// ═══════════════════════════════════════════════════════════
+function renderVoteGrid(){
+  document.getElementById('voteGrid').innerHTML=G.gsl.map(d=>{
+    const v=G.votes[d.id]||'';
+    return `<div class="vote-card ${v}" id="vc-${d.id}"><div class="vote-flag">${d.flag}</div><div class="vote-country">${d.name}</div><div class="vote-choice ${v}">${v?v==='yes'?'YES':v==='no'?'NO':'ABS':'—'}</div></div>`;
+  }).join('');
+}
+function initiateVoting(){
+  if(G.votingActive){toast('Vote already in progress.','error');return;}
+  G.votingActive=true;G.playerVoted=false;G.votingDone=false;G.votes={};
+  setPhase('vote');document.getElementById('votePanel').style.display='block';
+  ['voteYesBtn','voteNoBtn','voteAbsBtn'].forEach(id=>{const el=document.getElementById(id);if(el) el.disabled=false;});
+  document.getElementById('voteResult').textContent='';
+  switchTab('resolution');renderVoteGrid();
+  addMsg('chair','Chair','The committee proceeds to a recorded vote on Draft Resolution SC/1/L.1.');
+  score('negotiation',10);
+  G.gsl.forEach(d=>{
+    if(d.id===G.country.id) return;
+    setTimeout(()=>{
+      if(G.votingDone) return;
+      const roll=Math.random();const ally=G.country.allies.includes(d.id);const rival=G.country.rivals.includes(d.id);
+      G.votes[d.id]=rival?'no':ally?(roll<0.8?'yes':'abstain'):(roll<0.44?'yes':roll<0.68?'abstain':'no');
+      renderVoteGrid();checkTally();
+    },1200+Math.random()*5000);
+  });
+}
+function castVote(c){
+  if(G.playerVoted){toast('Already voted.','error');return;}
+  if(!G.votingActive){toast('No vote in progress.','error');return;}
+  G.votes[G.country.id]=c;G.playerVoted=true;
+  ['voteYesBtn','voteNoBtn','voteAbsBtn'].forEach(id=>{const el=document.getElementById(id);if(el) el.disabled=true;});
+  renderVoteGrid();score('negotiation',6);checkTally();
+}
+function checkTally(){
+  const cast=Object.keys(G.votes).length;if(cast<5) return;
+  if(G.votingDone) return;
+  if(cast>=G.gsl.length||cast>=Math.ceil(G.gsl.length*.7)){
+    G.votingDone=true;
+    const yes=Object.values(G.votes).filter(v=>v==='yes').length;
+    const no=Object.values(G.votes).filter(v=>v==='no').length;
+    const abs=Object.values(G.votes).filter(v=>v==='abstain').length;
+    const p5Veto=G.gsl.filter(d=>['us','ru','cn','uk','fr'].includes(d.id)&&G.votes[d.id]==='no').length>0;
+    const passed=yes>no&&!p5Veto;
+    const txt=p5Veto&&yes>no?`${yes} Yes | ${no} No | ${abs} Abs — ✗ VETOED`:`${yes} Yes | ${no} No | ${abs} Abs — ${passed?'✓ ADOPTED':'✗ FAILED'}`;
+    document.getElementById('voteResult').textContent=txt;
+    document.getElementById('voteResult').style.color=passed?'#70d4a0':'#e08070';
+    addMsg('chair','Chair',`SC/1/L.1 has ${passed?'been adopted':'failed to pass'}. ${yes} in favour, ${no} against, ${abs} abstentions.${p5Veto&&!passed?' Veto exercised.':''}`);
+    if(passed) score('diplomacy',22); else score('diplomacy',5);
+    G.votingActive=false;setPhase('gsl');
+    setTimeout(()=>{if(!G.spkr) scheduleNextAI();},3000);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BLOCS
+// ═══════════════════════════════════════════════════════════
+function renderBlocs(){
+  const el=document.getElementById('blocList');
+  if(!G.blocs.length){el.innerHTML='<p style="font-size:.76rem;color:rgba(255,255,255,.34)">No blocs formed yet.</p>';return;}
+  el.innerHTML=G.blocs.map(b=>`<div class="bloc-card"><h4>${b.name}${G.myBloc===b.name?' <span style="color:#70d4a0;font-size:.68rem">★ Your Bloc</span>':''}</h4><div class="bloc-members">${b.members.map(m=>`<span class="bloc-member">${m}</span>`).join('')}</div></div>`).join('');
+}
+function renderAllianceIntel(){
+  document.getElementById('allianceIntel').innerHTML=G.gsl.filter(d=>d.id!==G.country.id).map(d=>{
+    const ally=G.country.allies.includes(d.id);const rival=G.country.rivals.includes(d.id);
+    const pos=ally?'Likely YES':rival?'Likely NO':'Likely ABSTAIN';
+    const color=ally?'#70d4a0':rival?'#e08070':'rgba(255,255,255,.38)';
+    return `<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)"><span style="font-size:.88rem">${d.flag}</span><span style="flex:1;font-size:.73rem;color:var(--cream-dark)">${d.name}</span><span style="font-size:.68rem;color:${color}">${pos}</span></div>`;
+  }).join('');
+}
+function formBloc(){
+  const name=prompt('Name for your new bloc:');if(!name?.trim()) return;
+  const bloc={name:name.trim(),members:[G.country.name]};G.blocs.push(bloc);G.myBloc=bloc.name;
+  addMsg('delegate',G.country.name,`${G.country.flag} ${G.country.name} announces the formation of the "${bloc.name}" bloc.`);
+  score('diplomacy',10);score('negotiation',5);
+  G.gsl.filter(d=>G.country.allies.includes(d.id)).forEach((d,i)=>{
+    setTimeout(()=>{bloc.members.push(d.name);addMsg('delegate',d.name,`${d.flag} ${d.name} joins the "${bloc.name}" bloc.`);renderBlocs();},i*1500+1500);
+  });
+  renderBlocs();toast('Bloc "'+bloc.name+'" formed!','success');
+}
+function joinBloc(){
+  if(!G.blocs.length){toast('No blocs to join.','error');return;}
+  const b=G.blocs[0];if(b.members.includes(G.country.name)){toast('Already in this bloc.','error');return;}
+  b.members.push(G.country.name);G.myBloc=b.name;
+  addMsg('delegate',G.country.name,`${G.country.flag} ${G.country.name} joins the "${b.name}" bloc.`);
+  score('diplomacy',6);renderBlocs();toast('Joined "'+b.name+'".','success');
+}
+function leaveBloc(){
+  if(!G.myBloc){toast('Not in a bloc.','error');return;}
+  const b=G.blocs.find(x=>x.name===G.myBloc);if(b) b.members=b.members.filter(m=>m!==G.country.name);
+  G.myBloc=null;addMsg('delegate',G.country.name,`${G.country.flag} ${G.country.name} withdraws from the bloc.`);
+  renderBlocs();toast('Left the bloc.','success');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TSS
+// ═══════════════════════════════════════════════════════════
+function renderTSS(){
+  document.getElementById('tssActions').innerHTML=TSS.map(a=>{
+    const used=G.tssUsed.includes(a.id);
+    return `<div class="tss-action"><div class="tss-icon">${a.icon}</div><div class="tss-body"><div class="tss-label">${a.label}</div><div class="tss-desc">${a.desc}</div><div class="tss-meta"><span class="tss-cost">Cost: ${a.cost}</span><span class="tss-eff ${a.dt<=0?'good':'bad'}">Tension ${a.dt>0?'+':''}${a.dt}%</span><span class="tss-eff ${a.ds>=0?'good':'bad'}">Stability ${a.ds>0?'+':''}${a.ds}%</span><button class="tss-deploy" onclick="deployTSS('${a.id}')" ${used?'disabled':''}>${used?'Deployed':'Deploy'}</button></div></div></div>`;
+  }).join('');
+}
+function deployTSS(id){
+  const a=TSS.find(x=>x.id===id);if(!a||G.tssUsed.includes(id)) return;
+  G.tssUsed.push(id);G.tension=clamp(G.tension+a.dt,0,100);G.stability=clamp(G.stability+a.ds,0,100);
+  updateStats();
+  const log=document.getElementById('tssLog');if(log.style.color) log.style.color='';
+  log.innerHTML+=`<div class="tss-log-item"><div style="color:var(--gold-light);font-size:.76rem">${a.icon} ${a.label}</div><div style="font-size:.68rem;color:rgba(255,255,255,.35)">Tension ${a.dt>0?'+':''}${a.dt}% | Stability ${a.ds>0?'+':''}${a.ds}%</div></div>`;
+  addMsg('delegate',G.country.name,`${G.country.flag} Strategic action deployed: ${a.label}`);
+  score('diplomacy',8);renderTSS();toast(`${a.icon} ${a.label} deployed.`,'success');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CHAT
+// ═══════════════════════════════════════════════════════════
+function addMsg(type,author,text,fullText){
+  const entry={type,author,text,fullText:fullText||text};
+  G.msgs.push(entry);
+  if(G.chatTab==='floor') appendMsg(entry,document.getElementById('chatMsgs'));
+  appendMsg(entry,document.getElementById('chatMsgs2'));
+}
+function addPrivateMsg(from,to,text){
+  const entry={type:'private',author:`${from} → ${to}`,text};
+  G.pvtMsgs.push(entry);
+  if(G.chatTab==='private'){appendMsg(entry,document.getElementById('chatMsgs'));appendMsg(entry,document.getElementById('chatMsgs2'));}
+}
+function appendMsg(entry,container){
+  if(!container) return;
+  const d=document.createElement('div');
+  d.className='msg '+entry.type;
+  let inner='';
+  const hasTts=entry.type!=='system'&&entry.fullText&&entry.fullText.length>20;
+  const ttsId='m_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  if(entry.author&&entry.type!=='system'){
+    inner=`<div class="msg-header"><span class="msg-author">${entry.author}</span>${hasTts?`<button class="tts-btn" id="${ttsId}" onclick="ttsBtn(${JSON.stringify(entry.fullText)},'${ttsId}')" title="Listen">🔊</button>`:''}</div><div>${entry.text}</div>`;
+  } else {
+    inner=`<div>${entry.text}</div>`;
+  }
+  d.innerHTML=inner;
+  container.appendChild(d);
+  container.scrollTop=container.scrollHeight;
+}
+function sendNote(){
+  const inp=document.getElementById('chatInput');const text=inp.value.trim();if(!text) return;inp.value='';
+  const target=document.getElementById('chatTarget').value;
+  _sendNote(text,target);
+}
+function sendNote2(){
+  const inp=document.getElementById('chatInput2');const text=inp.value.trim();if(!text) return;inp.value='';
+  _sendNote(text,'floor');
+}
+function _sendNote(text,target){
+  const c=G.country;
+  if(target==='floor'){
+    addMsg('me',c.name,text);score('negotiation',3);
+    setTimeout(()=>{
+      const r=rand(G.gsl.filter(d=>d.id!==c.id));
+      const replies=['We note your position with interest.','The delegation appreciates your engagement.','We can discuss this during the next unmoderated caucus.','Our delegation has reservations but remains open to negotiation.','Valuable diplomatic signal. We will consult our principals.'];
+      addMsg('delegate',r.name,r.flag+' '+rand(replies));
+    },1500+Math.random()*2000);
+  } else {
+    const recipient=G.gsl.find(d=>d.id===target);
+    if(recipient){
+      addPrivateMsg(c.name,recipient.name,text);score('negotiation',4);score('diplomacy',2);
+      setTimeout(()=>{
+        const pvt=['Thank you for reaching out. We are open to bilateral discussions.','We will consider your proposal carefully.','Can we align on operative clause language before the vote?','We share some of your concerns. Let us coordinate.'];
+        addPrivateMsg(recipient.name,c.name,`${recipient.flag} ${rand(pvt)}`);
+      },1800+Math.random()*2500);
+    }
+  }
+}
+function switchChat(tab){
+  G.chatTab=tab;
+  document.querySelectorAll('#inlineChat .ctab').forEach((t,i)=>t.classList.toggle('active',['floor','private','notes'][i]===tab));
+  rebuildChatView(document.getElementById('chatMsgs'),tab);
+}
+function switchChat2(tab){
+  document.querySelectorAll('#chatPanelFloat .ctab').forEach((t,i)=>t.classList.toggle('active',['floor','private','notes'][i]===tab));
+  rebuildChatView(document.getElementById('chatMsgs2'),tab);
+}
+function rebuildChatView(el,tab){
+  if(!el) return;
+  el.innerHTML='';
+  if(tab==='floor') G.msgs.forEach(m=>appendMsg(m,el));
+  else if(tab==='private'){
+    if(!G.pvtMsgs.length) el.innerHTML='<div class="msg system">Secure private channel — select recipient above.</div>';
+    else G.pvtMsgs.forEach(m=>appendMsg(m,el));
+  } else {el.innerHTML='<div class="msg system">Internal delegation notes.</div>';}
+}
+function switchTab(tab){
+  G.activeTab=tab;
+  const tabs=['debate','gsl','resolution','blocs','tss'];
+  document.querySelectorAll('.mtab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab)?.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ADVISOR (Groq-powered)
+// ═══════════════════════════════════════════════════════════
+async function openAdvisor(){
+  const modal=document.getElementById('advisorModal');const content=document.getElementById('advisorContent');
+  if(G.advisorUses<=0){content.innerHTML='<p style="color:rgba(255,200,200,.7);font-size:.82rem">All three advisor consultations used this session.</p>';modal.style.display='flex';return;}
+  G.advisorUses--;renderAdvisor();modal.style.display='flex';
+  document.getElementById('advisorSub').textContent=`${G.advisorUses} use${G.advisorUses!==1?'s':''} remaining · Confidential`;
+  content.innerHTML=`<div class="advisor-loading">Consulting Chief Policy Advisor<span class="loading-dots"></span></div>`;
+
+  let adv={speech:'',negotiation:'',voting:'',geo:''};
+  if(GROQ.enabled){
+    const c=G.country;
+    const p=`You are the Chief Policy Advisor for the delegation of ${c.name} (${c.bloc}) at a UN Security Council session on Nuclear Non-Proliferation and Regional Security Threats. Foreign policy: "${c.fp}". Stance: "${c.stance}". Allies: ${c.allies.join(', ')||'none'}. Rivals: ${c.rivals.join(', ')||'none'}. Current global stability: ${G.stability}%, tension: ${G.tension}%. Give strategic advice as JSON with exactly these keys: {"speech":"2 sentences","negotiation":"2 sentences","voting":"1-2 sentences","geo":"2 sentences"}. Only JSON.`;
+    const ai=await groqCall([{role:'user',content:p}],500);
+    if(ai){try{const parsed=JSON.parse(ai.replace(/```json|```/g,'').trim());adv=parsed;}catch(e){}}
+  }
+  if(!adv.speech){
+    const fallbacks={
+      us:{speech:'Lead with humanitarian cost of proliferation. Reference IAEA enrichment timeline data.',negotiation:'Target swing votes — India and Brazil. Offer bilateral technical cooperation.',voting:'Vote YES on any resolution with binding verification.',geo:'Enrichment milestone expected within 4-5 weeks. Time pressure favours robust resolution language now.'},
+      ru:{speech:'Emphasise sovereignty and peaceful nuclear rights. Warn against precedent-setting.',negotiation:'Build blocking bloc with China. Court developing nations with nuclear cooperation offers.',voting:'Threaten veto on Chapter VII language. Accept Chapter VI as conditional concession.',geo:'Western alliance fractured. Germany and France prefer the diplomatic path — exploit this division.'},
+      cn:{speech:'Advocate dialogue and multilateral frameworks. Oppose language setting interventionist precedent.',negotiation:'Maintain strategic ambiguity. Support resolutions only if sovereignty is reaffirmed.',voting:'Coordinate with Russia. Likely abstain if language is softened sufficiently.',geo:'Regional stability near Taiwan Strait paramount. Avoid interventionist precedents.'},
+    };
+    adv=fallbacks[G.country.id]||{speech:`Speak with authority on ${G.country.name}'s stated position. Reference historical non-proliferation commitments.`,negotiation:`Identify like-minded delegations and seek co-sponsorship from at least two partners.`,voting:`Align votes with your declared alliance structure.`,geo:`This crisis is an opportunity for ${G.country.name} to demonstrate leadership.`};
+  }
+  content.innerHTML=`
+    <div class="advisor-brief"><h4>Speech Recommendation</h4><p>${adv.speech}</p></div>
+    <div class="advisor-brief"><h4>Negotiation Strategy</h4><p>${adv.negotiation}</p></div>
+    <div class="advisor-brief"><h4>Voting Guidance</h4><p>${adv.voting}</p></div>
+    <div class="advisor-brief"><h4>Geopolitical Assessment</h4><p>${adv.geo}</p></div>
+    <p style="font-size:.66rem;color:rgba(255,255,255,.25);margin-top:.7rem">${G.advisorUses} use${G.advisorUses!==1?'s':''} remaining.</p>`;
+}
+function closeAdvisor(){document.getElementById('advisorModal').style.display='none';}
+function bgClose(e){if(e.target===document.getElementById('advisorModal')) closeAdvisor();}
+
+// ═══════════════════════════════════════════════════════════
+//  SCORING
+// ═══════════════════════════════════════════════════════════
+function score(key,delta){
+  G.scores[key]=clamp((G.scores[key]||0)+delta,0,100);
+  const v=Math.round(G.scores[key]);
+  const bars={diplomacy:'barDip',speeches:'barSp',negotiation:'barNe',crisis:'barCr'};
+  const nums={diplomacy:'numDip',speeches:'numSp',negotiation:'numNe',crisis:'numCr'};
+  const bar=document.getElementById(bars[key]);const num=document.getElementById(nums[key]);
+  if(bar) bar.style.width=v+'%';if(num) num.textContent=v;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  AWARDS
+// ═══════════════════════════════════════════════════════════
+function endSimulation(){
+  clearInterval(G.timer);clearTimeout(G.crisisTimer);stopMic();stopTTS();
+  showScreen('awards');
+  const s=G.scores;const avg=(s.diplomacy+s.speeches+s.negotiation+s.crisis)/4;
+  const award=avg>72?{title:'Best Delegate',medal:'🥇',reason:'Exceptional diplomatic leadership, persuasive speeches, successful coalition building, and decisive crisis management.'}:avg>52?{title:'Outstanding Delegate',medal:'🥈',reason:'Strong diplomatic engagement, effective procedural participation, and meaningful contributions to resolution drafting.'}:{title:'Honorable Mention',medal:'🥉',reason:'Active participation demonstrating solid understanding of MUN procedures and diplomatic protocol.'};
+  const c=G.country;
+  document.getElementById('awardsContent').innerHTML=`
+    <div class="award-card" style="border-color:var(--gold)">
+      <div class="award-medal">${award.medal}</div>
+      <div><div class="award-name">${award.title}</div><div class="award-country">${c.flag} ${c.name} · UN Security Council</div><div class="award-reason">${award.reason}</div></div>
+    </div>
+    <div class="award-scores">
+      ${[['Diplomacy',s.diplomacy],['Speech Quality',s.speeches],['Negotiation',s.negotiation],['Crisis Response',s.crisis]].map(([lbl,val])=>`<div class="ascore"><div class="ascore-label">${lbl}</div><div class="ascore-val">${Math.round(val)}</div><div class="ascore-bar"><div class="ascore-fill" style="width:${val}%"></div></div></div>`).join('')}
+    </div>
+    <div class="final-state">
+      <div class="fs-item"><span class="fs-label">Stability: </span><span style="color:${G.stability>50?'#70d4a0':'#e08070'}">${G.stability}%</span></div>
+      <div class="fs-item"><span class="fs-label">Tension: </span><span style="color:${G.tension<50?'#70d4a0':'#e08070'}">${G.tension}%</span></div>
+      <div class="fs-item"><span class="fs-label">Sessions: </span><span style="color:var(--cream)">${G.session}</span></div>
+      <div class="fs-item"><span class="fs-label">Rounds: </span><span style="color:var(--cream)">${G.round}</span></div>
+      <div class="fs-item"><span class="fs-label">TSS Actions: </span><span style="color:var(--cream)">${G.tssUsed.length}</span></div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESET
+// ═══════════════════════════════════════════════════════════
+function resetGame(){
+  clearInterval(G.timer);clearTimeout(G.crisisTimer);stopMic();stopTTS();
+  G={country:null,phase:'gsl',session:1,round:1,stability:72,tension:61,advisorUses:3,timer:null,spkr:null,timeLeft:90,isPlayerSpeaking:false,scores:{diplomacy:40,speeches:25,negotiation:10,crisis:30},gsl:[],msgs:[],pvtMsgs:[],chatTab:'floor',activeTab:'debate',votes:{},votingDone:false,playerVoted:false,resSubmitted:false,crisisActive:false,tssUsed:[],blocs:[],myBloc:null,crisisTimer:null,pendingFollowup:null,sidebarOpen:false,floatChatOpen:false};
+  document.querySelectorAll('.country-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('lobbyBtn').disabled=true;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+initLobby();
+// Pre-load TTS voices
+if(window.speechSynthesis) window.speechSynthesis.getVoices();
+window.speechSynthesis?.addEventListener?.('voiceschanged',()=>window.speechSynthesis.getVoices());
+</script>
+</body>
+</html>
